@@ -1,6 +1,7 @@
 const e = require("express");
 const express = require("express");
 const app = express();
+const crypto = require("crypto");
 const PORT = 8080;
 
 app.use(express.urlencoded({extended: true}));
@@ -12,8 +13,23 @@ const urlDatabase = {
 };
 
 const generateRandomString = () => {
-  
-}
+  // generate a random hex number with the crypto module see Node docs
+  const id = crypto.randomBytes(3).toString('hex');
+  let result = "";
+  for (let i = 0; i < 6; i ++) {
+  //Loop through that number and replace certain characters (at a random index each time)
+    const randomNum = Math.floor((Math.random() * 5) + 1);
+    if (id.charAt(randomNum).search(/[a-z]/g) === 0) {
+      result += id[randomNum].toUpperCase();
+    } else if (id.charAt(randomNum).search(/[a-z]/g) === -1) {
+      result += (Math.random() + 1).toString(36).substring(2, 3);
+    } else {
+      result += id[i];
+    }
+
+  }
+  return result;
+};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -39,7 +55,7 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls", (req, res) => {
   console.log(req.body);
   res.send("Ok");
-})
+});
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = {id: req.params.id, longURL: urlDatabase[req.params.id]};
