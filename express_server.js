@@ -8,6 +8,7 @@ app.use(express.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
 const urlDatabase = {
+
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
@@ -31,44 +32,51 @@ const generateRandomString = () => {
   return result;
 };
 
+//root directory
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-
+//viewing the json
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-
+//testing html output
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+//main page, currently should also be redirected here
 app.get("/urls", (req, res) => {
   const templateVars = {urls: urlDatabase};
   res.render("urls_index", templateVars);
 });
 
+//send user to the create new page
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//form submission handling by updating the database
+app.post("/urls", (req, res) => {
+  const tiny = generateRandomString()
+  urlDatabase[tiny] = req.body.longURL
+  console.log(urlDatabase);
+  res.redirect('/urls/'+ tiny);
+});
 
+//this will send the appropriate object to the show page in order to be displayed after form submission 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = {id: req.params.id, longURL: urlDatabase[req.params.id]};
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
   res.render("urls_show", templateVars);
 });
 
 
-app.post("/urls", (req, res) => {
-  // console.log(generateRandomString(), req.body);
-  const tiny = generateRandomString()
-  console.log(urlDatabase);
-  // const newUrl = {longURL: req.body.longURL}
-  urlDatabase[tiny] = req.body.longURL
-  // urlDatabase[tiny] = newUrl
-  console.log(urlDatabase);
-  res.send("Ok");
-});
+
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL);
+})
+//
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
