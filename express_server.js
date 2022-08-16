@@ -1,7 +1,9 @@
+const e = require("express");
 const express = require("express");
 const app = express();
 const PORT = 8080;
 
+app.use(express.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
 const urlDatabase = {
@@ -15,21 +17,30 @@ app.get("/", (req, res) => {
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
-})
+});
 
 app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n")
-})
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
 
 app.get("/urls", (req, res) => {
   const templateVars = {urls: urlDatabase};
-  res.render("urls_index", templateVars)
+  res.render("urls_index", templateVars);
+});
+
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
+app.post("/urls", (req, res) => {
+  console.log(req.body);
+  res.send("Ok");
 })
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = {id: req.params.id, longURL: urlDatabase[req.params.id]}
+  const templateVars = {id: req.params.id, longURL: urlDatabase[req.params.id]};
   res.render("urls_show", templateVars);
-})
+});
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
