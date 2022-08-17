@@ -32,9 +32,10 @@ const generateRandomString = () => {
   return result;
 };
 
-//root directory
+//root directory redirects to urls index will change later
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  // res.send("Hello!");
+  res.redirect("/urls")
 });
 //viewing the json
 app.get("/urls.json", (req, res) => {
@@ -71,14 +72,34 @@ app.get("/urls/:id", (req, res) => {
 });
 
 
-
+//redirect any short url to the longurl 
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 })
-//
+
+//once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page 
+//TODO add a confirmation window before delete, possibly undo??
+app.post("/urls/:id/delete", (req, res) => {
+    delete urlDatabase[req.params.id];
+    res.redirect("/urls")
+})
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
 
+
+// const onCheck = () => {
+//   if (confirm("Are you certain")) {
+//     app.post("/urls/:id/delete", (req, res) => {
+//       // res.render(alert("Are you certain?"))
+//       delete urlDatabase[req.params.id];
+//       res.redirect("/urls")
+//   })
+//   } else {
+//     res.redirect("/urls")
+//   }
+// }
+
+// module.exports = onCheck
