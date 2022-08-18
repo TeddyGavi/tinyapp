@@ -77,7 +77,7 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-   username: req.cookies.username,
+   users: users[req.cookies.user_id],
   };
   res.render("urls_index", templateVars);
 });
@@ -85,7 +85,7 @@ app.get("/urls", (req, res) => {
 //send user to the create new page
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: users,
+    users: users[req.cookies.user_id],
   }
   res.render("urls_new", templateVars);
 });
@@ -97,7 +97,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = { 
     id: req.params.id, 
     longURL: urlDatabase[req.params.id],
-    username: users,
+    users: users[req.cookies.user_id],
   };
   res.render("urls_show", templateVars);
 });
@@ -112,7 +112,7 @@ app.get("/u/:id", (req, res) => {
 //register page
 app.get("/register", (req, res) => {
   const templateVars = {
-    username: users,
+    users: users[req.cookies.user_id],
   }
   res.render("urls_register", templateVars)
 })
@@ -147,7 +147,7 @@ app.post("/urls/:id/delete", (req, res) => {
 //when a user logs in we set a cookie named "username"
 //also displayed to the server for now
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username)
+  res.cookie("user_id", req.cookies[user_id])
   console.log('cookies', req.cookies)
   console.log(req.body)
   res.redirect("/urls")
@@ -155,7 +155,7 @@ app.post("/login", (req, res) => {
 
 //set up the logout route so the user can hit the logout button and get redirected back to root
 app.post("/logout", (req, res) => {
-  res.clearCookie("username")
+  res.clearCookie("user_id")
   res.redirect("/urls")
 })
 

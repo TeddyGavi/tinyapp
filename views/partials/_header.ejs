@@ -21,10 +21,10 @@
     <div>
       </div>
       <!-- TODO fix the sizing issues with logout and login not the same size -->
-<% if(username){ %>
+<% if(users){ %>
      
       <form class="form-inline" action="/logout" method="POST">
-        <label for="logout" class="mr-2 my-0">Logged in as: <%= username %></label>
+        <label for="logout" class="mr-2 my-0">Logged in as: <%= users.email %></label>
         <button class="btn btn-outline-dark my-0 px-3" type="submit">Logout</button>
       </form>
     <% } else { %>
