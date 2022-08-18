@@ -134,7 +134,7 @@ app.post("/login", (req, res) => {
 
 //set up the logout route so the user can hit the logout button and get redirected back to root
 app.post("/logout", (req, res) => {
-  res.clearCookie("username", req.cookies.username === null)
+  res.clearCookie("username")
   res.redirect("/urls")
 })
 
