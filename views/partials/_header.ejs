@@ -18,5 +18,40 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
+    <div>
+      </div>
+      <!-- TODO fix the sizing issues with logout and login not the same size -->
+<% if(username){ %>
+     
+      <form class="form-inline" action="/logout" method="POST">
+        <label for="logout" class="mr-2 my-0">Logged in as: <%= username %></label>
+        <button class="btn btn-outline-dark my-0 px-3" type="submit">Logout</button>
+      </form>
+    <% } else { %>
+    
+    <a class="nav-item justify-content-end">
+      <form class="form-inline" action="/login" method="POST">
+        <label for="username" class="mr-2 my-0">Login</label> 
+        <input 
+        class="form-control mr-sm-2"
+        type="text"
+        name="username"
+        placeholder="Username"
+        aria-label="login">
+        <button class="btn btn-outline-dark my-0 px-3"
+        type="submit"
+        >Login</button>
+    </div>
+      </form>
+    </a>
+    <% } %>
+
   </nav>
 </header>
+
+
+<!-- TODO the login portion of the header doesn't collapse properly with the rest of the navbar 
+
+ADD logic to display the login if a username doesn't exist
+
+otherwise display the username logged in and display a logout-->
