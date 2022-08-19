@@ -3,6 +3,7 @@ const app = express();
 const morgan = require('morgan');
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
+const figlet = require("figlet");
 const PORT = 8080;
 
 app.set("view engine", "ejs");
@@ -10,6 +11,19 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({extended: true}));
 app.use(morgan("dev"));
 app.use(cookieParser());
+
+figlet.text('Welcome to\nTiny App', {
+  font: "Avatar",
+  horizontalLayout: 'fitted',
+  verticalLayout: "fitted",
+  whitespaceBreak: true,
+
+}, (err, data) => {
+  if (err) {
+    console.log(err.message);
+  }
+  console.log(data);
+});
 
 const urlDatabase = {
 
