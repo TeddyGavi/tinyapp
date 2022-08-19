@@ -1,7 +1,6 @@
-const e = require("express");
 const express = require("express");
 const app = express();
-const morgan = require('morgan')
+const morgan = require('morgan');
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
 const PORT = 8080;
@@ -29,7 +28,7 @@ const users = {
     email: "user2@example.com",
     password: "dishwasher-funk",
   }
-}
+};
 
 
 //function that employs crypto to help generate random 6 character string
@@ -52,12 +51,20 @@ const generateRandomString = () => {
   return result;
 };
 
-
+const getUserByEmail = (email) => {
+  for (const uId in users) {
+    if (users[uId].email === email) {
+      return users[uId];
+    }
+  }
+  
+  return null;
+};
 /*************************** TESTs ******************************/
 //root directory redirects to urls index will change later
 app.get("/", (req, res) => {
   // res.send("Hello!");
-  res.redirect("/urls")
+  res.redirect("/register");
 });
 //viewing the json
 app.get("/urls.json", (req, res) => {
@@ -77,8 +84,9 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-   users: users[req.cookies.user_id],
+    users: users[req.cookies.user_id],
   };
+  console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_index", templateVars);
 });
 
@@ -86,36 +94,39 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
-  }
+  };
+  console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_new", templateVars);
 });
 
 
 
-//this will send the appropriate object to the show page in order to be displayed after form submission 
+//this will send the appropriate object to the show page in order to be displayed after form submission
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { 
-    id: req.params.id, 
+  const templateVars = {
+    id: req.params.id,
     longURL: urlDatabase[req.params.id],
     users: users[req.cookies.user_id],
   };
+  console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_show", templateVars);
 });
 
 
-//redirect any short url to the longurl 
+//redirect any short url to the longurl
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
-})
+});
 
 //register page
 app.get("/register", (req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
-  }
-  res.render("urls_register", templateVars)
-})
+  };
+  console.log('The logged in user is', users[req.cookies.user_id]);
+  res.render("urls_register", templateVars);
+});
 
 /*************************** GET end **************************/
 
@@ -124,10 +135,10 @@ app.get("/register", (req, res) => {
 
 //form submission handling by updating the database
 app.post("/urls", (req, res) => {
-  const tiny = generateRandomString()
-  urlDatabase[tiny] = req.body.longURL
+  const tiny = generateRandomString();
+  urlDatabase[tiny] = req.body.longURL;
   console.log(urlDatabase);
-  res.redirect('/urls/'+ tiny);
+  res.redirect('/urls/' + tiny);
 });
 
 //add a post method that will allow updating of the long url
@@ -135,42 +146,57 @@ app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect('/urls');
-})
+});
 
-//once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page 
+//once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page
 //TODO add a confirmation window before delete, possibly undo??
 app.post("/urls/:id/delete", (req, res) => {
-    delete urlDatabase[req.params.id];
-    res.redirect("/urls")
-})
+  delete urlDatabase[req.params.id];
+  res.redirect("/urls");
+});
 
 //when a user logs in we set a cookie named "username"
 //also displayed to the server for now
 app.post("/login", (req, res) => {
-  res.cookie("user_id", req.cookies[user_id])
-  console.log('cookies', req.cookies)
-  console.log(req.body)
-  res.redirect("/urls")
-})
+  res.cookie("user_id", req.cookies[user_id]);
+  console.log('cookies', req.cookies);
+  console.log(req.body);
+  res.redirect("/urls");
+});
 
 //set up the logout route so the user can hit the logout button and get redirected back to root
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id")
-  res.redirect("/urls")
-})
+  res.clearCookie("user_id");
+  res.redirect("/register");
+});
 
 //register end point
 app.post("/register", (req, res) => {
   const id = generateRandomString();
+  
+  //if email or password are empty strings send back a 400 status code
+  
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400);
+  }
+  
+  console.log(getUserByEmail(req.body.email))
+  if (getUserByEmail(req.body.email)) {
+    res.statusCode = 400;
+    return res.send(`Error. Status code: ${res.statusCode} Account already exists`);
+  }
+  
   users[id] = {
     id: id,
     email: req.body.email,
     password: req.body.password,
-  } 
-  res.cookie("user_id", users[id].id)
-  console.log(users);
+  };
+
+  res.cookie("user_id", users[id].id);
+  // console.log(JSON.stringify(users[req.cookies.user_id], null, 2));
+  console.log(users[req.cookies.user_id], users);
   res.redirect("/urls");
-})
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
