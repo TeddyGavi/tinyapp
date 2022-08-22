@@ -1,10 +1,11 @@
 const express = require("express");
 const app = express();
-const morgan = require('morgan');
 const crypto = require("crypto");
+const morgan = require('morgan');
 const cookieParser = require("cookie-parser");
 const figlet = require("figlet");
 const PORT = 8080;
+
 
 app.set("view engine", "ejs");
 
@@ -25,26 +26,7 @@ figlet.text('Welcome to\nTiny App', {
   console.log(data);
 });
 
-const urlDatabase = {
-
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
-};
-
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID :{
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  }
-};
-
-//function that employs crypto to help generate random 6 character string
+//a function using crypto to help generate random 6 character string
 const generateRandomString = () => {
   // generate a random hex number with the crypto module see Node docs
   const id = crypto.randomBytes(3).toString('hex');
@@ -73,6 +55,27 @@ const getUserByEmail = (email) => {
   
   return null;
 };
+
+const urlDatabase = {
+
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com",
+};
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID :{
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  }
+};
+
+
 /*************************** TESTs *********************************/
 //root directory redirects to urls index will change later
 app.get("/", (req, res) => {
@@ -251,16 +254,4 @@ app.listen(PORT, () => {
 });
 
 
-// const onCheck = () => {
-//   if (confirm("Are you certain")) {
-//     app.post("/urls/:id/delete", (req, res) => {
-//       // res.render(alert("Are you certain?"))
-//       delete urlDatabase[req.params.id];
-//       res.redirect("/urls")
-//   })
-//   } else {
-//     res.redirect("/urls")
-//   }
-// }
-
-// module.exports = onCheck
+// module.exports = {users}
