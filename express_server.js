@@ -44,7 +44,6 @@ const users = {
   }
 };
 
-
 //function that employs crypto to help generate random 6 character string
 const generateRandomString = () => {
   // generate a random hex number with the crypto module see Node docs
@@ -74,7 +73,7 @@ const getUserByEmail = (email) => {
   
   return null;
 };
-/*************************** TESTs ******************************/
+/*************************** TESTs *********************************/
 //root directory redirects to urls index will change later
 app.get("/", (req, res) => {
   // res.send("Hello!");
@@ -94,7 +93,7 @@ app.get("/hello", (req, res) => {
 /*************************** GET start ******************************/
 
 
-//main page, currently should also be redirected here
+//main page,
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
@@ -138,7 +137,7 @@ app.get("/register", (req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
   };
-  console.log('The logged in user is', users[req.cookies.user_id]);
+  // console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_register", templateVars);
 });
 
@@ -146,9 +145,14 @@ app.get("/login",(req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
   };
-  console.log('The logged in user is', users[req.cookies.user_id]);
-  res.render("urls_login", templateVars)
-})
+  if (users[req.cookies.user_id] === undefined) {
+    console.log(`No one is logged in`);
+    res.render("urls_login", templateVars);
+  } else {
+    console.log('The logged in user is', users[req.cookies.user_id]);
+    res.render("urls_login", templateVars);
+  }
+});
 
 /*************************** GET end **************************/
 
@@ -177,17 +181,39 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-//when a user logs in we set a cookie named "username"
-//also displayed to the server for now
+//when a user logs in we authenticate the user before logging that user
 app.post("/login", (req, res) => {
-  res.cookie("user_id", req.cookies[user_id]);
-  console.log('cookies', req.cookies);
-  console.log(req.body);
+  // userEnteredEmail = req.body.email;
+  // userEnteredPassword = req.body.password;
+  const uId = getUserByEmail(req.body.email);
+  console.log(uId, typeof uId);
+
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400);
+  }
+  
+  //if the email search returns a empty object, that means user was not found
+  //must also check if the passwords match
+  if (uId === null) {
+    res.statusCode = 403;
+    res.send(`${res.statusCode} The email you entered is not in our database Please go back and try again, or register a A New User.`);
+  } else {
+    if (uId.password !== req.body.password) {
+      res.statusCode = 403;
+      return res.send(`${res.statusCode} The password you entered is incorrect`);
+    }
+  }
+
+  //set cookie to that users id
+  res.cookie("user_id", uId.id);
   res.redirect("/urls");
+
 });
 
-//set up the logout route so the user can hit the logout button and get redirected back to root
+
+//set up the logout route so the user can hit the logout button and get redirected back to login page
 app.post("/logout", (req, res) => {
+  console.log(users);
   res.clearCookie("user_id");
   res.redirect("/login");
 });
@@ -202,7 +228,7 @@ app.post("/register", (req, res) => {
     res.status(400);
   }
   
-  console.log(getUserByEmail(req.body.email))
+  console.log(getUserByEmail(req.body.email));
   if (getUserByEmail(req.body.email)) {
     res.statusCode = 400;
     return res.send(`Error. Status code: ${res.statusCode} Account already exists`);
