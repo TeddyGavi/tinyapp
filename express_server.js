@@ -142,6 +142,14 @@ app.get("/register", (req, res) => {
   res.render("urls_register", templateVars);
 });
 
+app.get("/login",(req, res) => {
+  const templateVars = {
+    users: users[req.cookies.user_id],
+  };
+  console.log('The logged in user is', users[req.cookies.user_id]);
+  res.render("urls_login", templateVars)
+})
+
 /*************************** GET end **************************/
 
 
@@ -181,7 +189,7 @@ app.post("/login", (req, res) => {
 //set up the logout route so the user can hit the logout button and get redirected back to root
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/register");
+  res.redirect("/login");
 });
 
 //register end point
