@@ -102,6 +102,11 @@ app.get("/urls", (req, res) => {
     urls: urlDatabase,
     users: users[req.cookies.user_id],
   };
+
+  if (!templateVars.users) {
+    return res.redirect("/login");
+  }
+
   console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_index", templateVars);
 });
@@ -111,8 +116,14 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
   };
+
+  if (!templateVars.users) {
+    return res.redirect("/login");
+  }
+
   console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_new", templateVars);
+  
 });
 
 
@@ -131,6 +142,9 @@ app.get("/urls/:id", (req, res) => {
 
 //redirect any short url to the longurl
 app.get("/u/:id", (req, res) => {
+  if (!urlDatabase[req.params.id]) {
+    return res.send('<html><body>This shortened URL does not exist.</body></html>')
+  }
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
@@ -140,21 +154,26 @@ app.get("/register", (req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
   };
-  // console.log('The logged in user is', users[req.cookies.user_id]);
+  if (templateVars.users) {
+    console.log('The logged in user is', users[req.cookies.user_id]);
+    return res.redirect("/urls");
+  }
+  console.log(`No one is logged in`);
   res.render("urls_register", templateVars);
+  
 });
 
 app.get("/login",(req, res) => {
   const templateVars = {
     users: users[req.cookies.user_id],
   };
-  if (users[req.cookies.user_id] === undefined) {
-    console.log(`No one is logged in`);
-    res.render("urls_login", templateVars);
-  } else {
+  if (templateVars.users) {
     console.log('The logged in user is', users[req.cookies.user_id]);
-    res.render("urls_login", templateVars);
+    return  res.redirect("/urls");
   }
+  console.log(`No one is logged in`);
+  res.render("urls_login", templateVars);
+  
 });
 
 /*************************** GET end **************************/
@@ -164,10 +183,15 @@ app.get("/login",(req, res) => {
 
 //form submission handling by updating the database
 app.post("/urls", (req, res) => {
+  if (!users[req.cookies.user_id]) {
+    res.status(401);
+    return res.send('<html><body>You are not registered and do not have permission to modify urls.</body></html>');
+  }
   const tiny = generateRandomString();
   urlDatabase[tiny] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect('/urls/' + tiny);
+  
 });
 
 //add a post method that will allow updating of the long url
