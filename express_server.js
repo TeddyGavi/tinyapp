@@ -123,7 +123,7 @@ app.get("/urls", (req, res) => {
     urls: url,
     users: users[req.cookies.user_id],
   };
-
+  // console.log(templateVars);
   // console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_index", templateVars);
 });
@@ -155,20 +155,24 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
 //TODO redirect to "urls_redirect" after a modal message
-  if (!users[req.cookies.user_id]) {
+  const id = req.cookies.user_id;
+  if (!users[id]) {
     res.status(401);
     return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
+  }
+  if (!urlDatabase[req.params.id]) {
+    res.status(404);
+    return res.send('<html><body>This shortURL does not exist. <a href="/urls">Please Return home.</a></body></html>')
   }
 
   //if a user is logged in, but the id doesn't match the set cookie then the user doesn't have permission to access the url
   //TODO same as above TODO ^^
-  const id = req.cookies.user_id;
-  console.log(id);
-  console.log(urlDatabase[req.params.id].userID);
   if (urlDatabase[req.params.id].userID !== id) {
     res.status(401);
     return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
   }
+
+
 
   const templateVars = {
     id: req.params.id,
@@ -237,22 +241,49 @@ app.post("/urls", (req, res) => {
 
 //add a post method that will allow updating of the long url
 app.post("/urls/:id", (req, res) => {
+  //if user is not logged in, error
+  const id = req.cookies.user_id;
+  if(!users[id]) {
+      res.status(401)
+      return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>')
+  } else if (!urlDatabase[req.params.id]) {
+    //if id doesn't exist, error, assume id of the short URL, for cURL requests
+    res.status(404)
+    return res.send('<html><body>That tinyURL does not exist<a href="/urls">Please return home</a></body></html>')
+    } else if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
   //if user that is logged in, matches the current cookie id, then we can allow for editing of the urls
-  if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
     res.status(401);
     return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
-  } 
-
-    urlDatabase[req.params.id] = req.body.longURL;
-    res.redirect('/urls');
-  
+  } else {
+    const longURL = req.body.longURL;
+    const userID = users[req.cookies.user_id].id;
+    urlDatabase[req.params.id] ={ longURL, userID }
+    return res.redirect('/urls');
+  }
 });
 
 //once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page
 //TODO add a confirmation window before delete, possibly undo??
 app.post("/urls/:id/delete", (req, res) => {
+  //if user is not logged in, error
+  const id = req.cookies.user_id;
+  if(!users[id]) {
+    res.status(401)
+    return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>')
+  } else if (!urlDatabase[req.params.id]) {
+     //if id doesn't exist, error assume id of the short URL, for cURL requests
+    res.status(404)
+    return res.send('<html><body>That tinyURL does not exist<a href="/urls">Please return home</a></body></html>')
+  } else if (urlDatabase[req.params.id].userID !== id) {
+      //if user doesn't own that url, error
+    res.status(401);
+    return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
+  } else {
+
   delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+  return res.redirect("/urls");
+  
+  }
 });
 
 //when a user logs in we authenticate the user before logging that user
