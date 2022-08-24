@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const crypto = require("crypto");
+const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
 const cookieParser = require("cookie-parser");
 const figlet = require("figlet");
@@ -123,8 +124,9 @@ app.get("/urls", (req, res) => {
     urls: url,
     users: users[req.cookies.user_id],
   };
-  // console.log(templateVars);
-  // console.log('The logged in user is', users[req.cookies.user_id]);
+
+  // console.log(users, urlDatabase)
+
   res.render("urls_index", templateVars);
 });
 
@@ -288,20 +290,23 @@ app.post("/urls/:id/delete", (req, res) => {
 
 //when a user logs in we authenticate the user before logging that user
 app.post("/login", (req, res) => {
- 
-  const uId = getUserByEmail(req.body.email);
-
-  if (req.body.email === "" || req.body.password === "") {
-    res.status(400);
+  const { password, email } = req.body;
+  const uId = getUserByEmail(email);
+  
+  if (email === "" || password === "") {
+    return res.status(400);
   }
   
   //if the email search returns a empty object, that means user was not found
-  //must also check if the passwords match
-  if (uId === null) {
+  if (!uId) {
     res.statusCode = 403;
     res.send(`${res.statusCode} The email you entered is not in our database Please go back and try again, or register a A New User.`);
   } else {
-    if (uId.password !== req.body.password) {
+    //must also check if the hashed passwords match
+    console.log(bcrypt.compareSync(password, uId.password))
+    console.log(uId, uId.password)
+
+    if (!bcrypt.compareSync(password, uId.password)) {
       res.statusCode = 403;
       return res.send(`${res.statusCode} The password you entered is incorrect`);
     }
@@ -323,29 +328,29 @@ app.post("/logout", (req, res) => {
 
 //register end point
 app.post("/register", (req, res) => {
+  const { email, password } = req.body;
   const id = generateRandomString();
   
   //if email or password are empty strings send back a 400 status code
   
-  if (req.body.email === "" || req.body.password === "") {
-    res.status(400);
+  if (email === "" || password === "") {
+   return res.status(400);
   }
   
-  // console.log(getUserByEmail(req.body.email));
-  if (getUserByEmail(req.body.email)) {
+  if (getUserByEmail(email)) {
     res.statusCode = 400;
     return res.send(`Error. Status code: ${res.statusCode} Account already exists`);
   }
-  
+
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
   users[id] = {
     id: id,
     email: req.body.email,
-    password: req.body.password,
+    password: hashedPassword,
   };
 
   res.cookie("user_id", users[id].id);
-  // console.log(JSON.stringify(users[req.cookies.user_id], null, 2));
-  // console.log(users[req.cookies.user_id], users);
   res.redirect("/urls");
 });
 
