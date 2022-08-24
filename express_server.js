@@ -84,12 +84,12 @@ const users = {
   aJ48lW: {
     id: "aJ48lW",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur",
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10),
   },
   user2RandomID :{
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: bcrypt.hashSync("dishwasher-funk", 10),
   }
 };
 
@@ -125,7 +125,7 @@ app.get("/urls", (req, res) => {
     users: users[req.cookies.user_id],
   };
 
-  // console.log(users, urlDatabase)
+  console.log(users, urlDatabase)
 
   res.render("urls_index", templateVars);
 });
