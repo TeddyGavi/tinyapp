@@ -1,9 +1,9 @@
 const express = require("express");
 const app = express();
-const crypto = require("crypto");
 const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
-const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
+const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
 const figlet = require("figlet");
 const PORT = 8080;
 
@@ -12,7 +12,10 @@ app.set("view engine", "ejs");
 
 app.use(express.urlencoded({extended: true}));
 app.use(morgan("dev"));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['I believe this will use key at 0, then allow for rotation']
+}));
 
 figlet.text('Welcome to\nTiny App', {
   font: "Avatar",
@@ -27,46 +30,6 @@ figlet.text('Welcome to\nTiny App', {
   console.log(data);
 });
 
-//a function using crypto to help generate random 6 character string
-const generateRandomString = () => {
-  // generate a random hex number with the crypto module see Node docs
-  const id = crypto.randomBytes(3).toString('hex');
-  let result = "";
-  for (let i = 0; i < 6; i ++) {
-  //Loop through that number and replace certain characters (at a random index each time)
-    const randomNum = Math.floor((Math.random() * 5) + 1);
-    if (id.charAt(randomNum).search(/[a-z]/g) === 0) {
-      result += id[randomNum].toUpperCase();
-    } else if (id.charAt(randomNum).search(/[a-z]/g) === -1) {
-      result += (Math.random() + 1).toString(36).substring(2, 3); //uses base 36 to return a single randomize character as long as the character is a not lowercase, this is needed as hex only includes up to base 16, letter F
-    } else {
-      result += id[i];
-    }
-
-  }
-  return result;
-};
-
-const getUserByEmail = (email) => {
-  for (const uId in users) {
-    if (users[uId].email === email) {
-      return users[uId];
-    }
-  }
-  
-  return null;
-};
-
-const urlsForUser = (id) => {
-  const urls = {};
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      urls[shortURL] = {longURL: urlDatabase[shortURL].longURL };
-    }
-  }
-
-  return urls;
-};
 
 const urlDatabase = {
 
@@ -115,17 +78,17 @@ app.get("/hello", (req, res) => {
 
 //main page,
 app.get("/urls", (req, res) => {
-  if (!users[req.cookies.user_id]) {
+  const id = req.session.user_id;
+  if (!users[id]) {
     return res.redirect("/urls_redirect");
   }
-  const id = req.cookies.user_id;
-  const url = urlsForUser(id);
+  const url = urlsForUser(id, urlDatabase);
   const templateVars = {
     urls: url,
-    users: users[req.cookies.user_id],
+    users: users[req.session.user_id],
   };
 
-  console.log(users, urlDatabase)
+  console.log(users, urlDatabase, req.session.user_id);
 
   res.render("urls_index", templateVars);
 });
@@ -135,11 +98,10 @@ app.get("/urls_redirect", (req, res) => {
   res.render("urls_redirect",);
 });
 
-
 //send user to the create new page
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    users: users[req.cookies.user_id],
+    users: users[req.session.user_id],
   };
 
   if (!templateVars.users) {
@@ -157,7 +119,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
 //TODO redirect to "urls_redirect" after a modal message
-  const id = req.cookies.user_id;
+  const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
     return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
@@ -179,7 +141,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
-    users: users[req.cookies.user_id],
+    users: users[id],
   };
   // console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_show", templateVars);
@@ -198,7 +160,7 @@ app.get("/u/:id", (req, res) => {
 //register page
 app.get("/register", (req, res) => {
   const templateVars = {
-    users: users[req.cookies.user_id],
+    users: users[req.session.user_id],
   };
   if (templateVars.users) {
     // console.log('The logged in user is', users[req.cookies.user_id]);
@@ -211,7 +173,7 @@ app.get("/register", (req, res) => {
 
 app.get("/login",(req, res) => {
   const templateVars = {
-    users: users[req.cookies.user_id],
+    users: users[req.session.user_id],
   };
   if (templateVars.users) {
     // console.log('The logged in user is', users[req.cookies.user_id]);
@@ -229,13 +191,14 @@ app.get("/login",(req, res) => {
 
 //form submission handling by updating the database
 app.post("/urls", (req, res) => {
-  if (!users[req.cookies.user_id]) {
+  const id = req.session.user_id;
+  if (!users[id]) {
     res.status(401);
     return res.send('<html><body>You are not registered and do not have permission to modify urls.</body></html>');
   }
   const tiny = generateRandomString();
   const longURL = req.body.longURL;
-  const userID = users[req.cookies.user_id].id;
+  const userID = users[id].id;
   urlDatabase[tiny] = { longURL, userID };
   res.redirect('/urls/' + tiny);
   
@@ -244,7 +207,7 @@ app.post("/urls", (req, res) => {
 //add a post method that will allow updating of the long url
 app.post("/urls/:id", (req, res) => {
   //if user is not logged in, error
-  const id = req.cookies.user_id;
+  const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
     return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
@@ -252,13 +215,13 @@ app.post("/urls/:id", (req, res) => {
     //if id doesn't exist, error, assume id of the short URL, for cURL requests
     res.status(404);
     return res.send('<html><body>That tinyURL does not exist<a href="/urls">Please return home</a></body></html>');
-  } else if (urlDatabase[req.params.id].userID !== req.cookies.user_id) {
+  } else if (urlDatabase[req.params.id].userID !== id) {
   //if user that is logged in but isn't the owner of the tinyURL cannot edit
     res.status(401);
     return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
   } else {
     const longURL = req.body.longURL;
-    const userID = users[req.cookies.user_id].id;
+    const userID = users[id].id;
     urlDatabase[req.params.id] = { longURL, userID };
     return res.redirect('/urls');
   }
@@ -268,7 +231,7 @@ app.post("/urls/:id", (req, res) => {
 //TODO add a confirmation window before delete, possibly undo??
 app.post("/urls/:id/delete", (req, res) => {
   //if user is not logged in, error
-  const id = req.cookies.user_id;
+  const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
     return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
@@ -291,7 +254,7 @@ app.post("/urls/:id/delete", (req, res) => {
 //when a user logs in we authenticate the user before logging that user
 app.post("/login", (req, res) => {
   const { password, email } = req.body;
-  const uId = getUserByEmail(email);
+  const uId = getUserByEmail(email, users);
   
   if (email === "" || password === "") {
     return res.status(400);
@@ -303,9 +266,6 @@ app.post("/login", (req, res) => {
     res.send(`${res.statusCode} The email you entered is not in our database Please go back and try again, or register a A New User.`);
   } else {
     //must also check if the hashed passwords match
-    console.log(bcrypt.compareSync(password, uId.password))
-    console.log(uId, uId.password)
-
     if (!bcrypt.compareSync(password, uId.password)) {
       res.statusCode = 403;
       return res.send(`${res.statusCode} The password you entered is incorrect`);
@@ -313,7 +273,7 @@ app.post("/login", (req, res) => {
   }
 
   //set cookie to that users id
-  res.cookie("user_id", uId.id);
+  req.session.user_id = uId.id;
   res.redirect("/urls");
 
 });
@@ -321,8 +281,7 @@ app.post("/login", (req, res) => {
 
 //set up the logout route so the user can hit the logout button and get redirected back to login page
 app.post("/logout", (req, res) => {
-  // console.log(users);
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect("/login");
 });
 
@@ -334,10 +293,10 @@ app.post("/register", (req, res) => {
   //if email or password are empty strings send back a 400 status code
   
   if (email === "" || password === "") {
-   return res.status(400);
+    return res.status(400);
   }
   
-  if (getUserByEmail(email)) {
+  if (getUserByEmail(email, users)) {
     res.statusCode = 400;
     return res.send(`Error. Status code: ${res.statusCode} Account already exists`);
   }
@@ -350,7 +309,7 @@ app.post("/register", (req, res) => {
     password: hashedPassword,
   };
 
-  res.cookie("user_id", users[id].id);
+  req.session.user_id = users[id].id;
   res.redirect("/urls");
 });
 
@@ -358,5 +317,3 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
 
-
-// module.exports = {users}
