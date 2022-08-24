@@ -1,6 +1,6 @@
 const { assert } = require('chai');
 
-const { getUserByEmail } = require('../helpers.js');
+const { getUserByEmail, generateRandomString, urlsForUser } = require('../helpers.js');
 
 const testUsers = {
   "userRandomID": {
@@ -22,6 +22,18 @@ const testBadStructure = {
 };
 
 const testEmpty = {};
+
+const testDatabase = {
+
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "aJ48lW",
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "aJ48lW",
+  },
+};
 
 describe('getUserByEmail', function() {
   it('should return a user with valid email', function() {
@@ -51,3 +63,32 @@ describe('getUserByEmail', function() {
   });
 
 });
+
+
+describe('#generateRandomString', () => {
+  it('Should return a string of 6 characters', () => {
+    const result = generateRandomString()
+    assert.equal(result.length, 6);
+  })
+
+  it('should not have two strings equal after just 2 calls', () => {
+    const idOne = generateRandomString();
+    const idTwo = generateRandomString();
+    assert.notEqual(idOne, idTwo)
+  })
+
+  //there is a chance that this could fail, especially if you increased the amount of loops, there is probably a better way to generate a more 'randomness' into the function
+  it('Should not have any strings equal after many calls', () => {
+    for (let i = 0; i < 10000; i++){
+      const idOne = generateRandomString()
+      const idTwo = generateRandomString()
+      assert.notEqual(idOne, idTwo);
+    }
+  })
+})
+
+describe('#urlsForUser', () => {
+  it('should return a object', () => {
+    assert.equal
+  })
+})

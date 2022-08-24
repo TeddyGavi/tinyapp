@@ -1,5 +1,5 @@
 const express = require("express");
-// const methodOverride = require("method-override")
+const methodOverride = require("method-override")
 const app = express();
 const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
@@ -8,6 +8,7 @@ const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers
 const figlet = require("figlet");
 const PORT = 8080;
 
+app.use(methodOverride('_method'));
 
 app.set("view engine", "ejs");
 
@@ -96,7 +97,13 @@ app.get("/urls", (req, res) => {
 
 //sends user to a page that will explicitly tell the users they must login or register
 app.get("/urls_redirect", (req, res) => {
-  res.render("urls_redirect",);
+  const id = req.session.user_id;
+  const url = urlsForUser(id, urlDatabase);
+  const templateVars = {
+    urls: url,
+    users: users[req.session.user_id],
+  };
+  res.render("urls_redirect", templateVars);
 });
 
 //send user to the create new page
@@ -206,7 +213,7 @@ app.post("/urls", (req, res) => {
 });
 
 //add a post method that will allow updating of the long url
-app.post("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => {
   //if user is not logged in, error
   const id = req.session.user_id;
   if (!users[id]) {
@@ -229,8 +236,9 @@ app.post("/urls/:id", (req, res) => {
 });
 
 //once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page
+//THIS HAS BEEN OVERRIDDEN TO A DELETE
 //TODO add a confirmation window before delete, possibly undo??
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id/delete", (req, res) => {
   //if user is not logged in, error
   const id = req.session.user_id;
   if (!users[id]) {
