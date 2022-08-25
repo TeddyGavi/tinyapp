@@ -38,10 +38,12 @@ const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
     userID: "aJ48lW",
+    click: 0,
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
     userID: "aJ48lW",
+    click: 15,
   },
 };
 
@@ -57,6 +59,22 @@ const users = {
     password: bcrypt.hashSync("dishwasher-funk", 10),
   }
 };
+
+const track = {
+  "b2xVn2": {
+    id: "b2xVn2",
+    clickNum: 20,
+    cookieID: "aJ48lW",
+    timeStamp: new Date(),
+  },
+  "9sm5xK": {
+    id: "9sm5xK",
+    clickNum: 44,
+    cookieID: "aJ48lW",
+    timeStamp: new Date(),
+  },
+}
+
 
 
 /*************************** TESTs *********************************/
@@ -116,7 +134,6 @@ app.get("/urls/new", (req, res) => {
     return res.redirect("/urls_redirect");
   }
 
-  // console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_new", templateVars);
   
 });
@@ -128,6 +145,8 @@ app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
 //TODO redirect to "urls_redirect" after a modal message
   const id = req.session.user_id;
+  const urlId = req.params.id
+  let clickNum = urlDatabase[urlId].click;
   if (!users[id]) {
     res.status(401);
     return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
@@ -144,14 +163,12 @@ app.get("/urls/:id", (req, res) => {
     return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
   }
 
-
-
   const templateVars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id].longURL,
+    id: urlId,
+    longURL: urlDatabase[urlId].longURL,
     users: users[id],
+    click: clickNum,
   };
-  // console.log('The logged in user is', users[req.cookies.user_id]);
   res.render("urls_show", templateVars);
 });
 
@@ -161,6 +178,7 @@ app.get("/u/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.send('<html><body>This shortened URL does not exist.</body></html>');
   }
+  urlDatabase[req.params.id].click++;
   const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
@@ -171,10 +189,8 @@ app.get("/register", (req, res) => {
     users: users[req.session.user_id],
   };
   if (templateVars.users) {
-    // console.log('The logged in user is', users[req.cookies.user_id]);
     return res.redirect("/urls");
   }
-  // console.log(`No one is logged in`);
   res.render("urls_register", templateVars);
   
 });
@@ -184,10 +200,8 @@ app.get("/login",(req, res) => {
     users: users[req.session.user_id],
   };
   if (templateVars.users) {
-    // console.log('The logged in user is', users[req.cookies.user_id]);
     return  res.redirect("/urls");
   }
-  // console.log(`No one is logged in`);
   res.render("urls_login", templateVars);
   
 });
