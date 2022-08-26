@@ -1,11 +1,11 @@
 const express = require("express");
-const methodOverride = require("method-override")
+const methodOverride = require("method-override");
 const app = express();
 const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
 const cookieSession = require("cookie-session");
 const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
-const { PORT, SESSION_KEYS, ERROR } = require("./CONSTANTS")
+const { PORT, SESSION_KEYS, ERROR } = require("./CONSTANTS");
 const figlet = require("figlet");
 
 app.use(methodOverride('_method'));
@@ -68,7 +68,7 @@ const track = {
   //   timeStamp: new Date(),
   //   uniqueVisitors: [],
   // }
-}
+};
 
 
 
@@ -102,8 +102,8 @@ app.get("/urls", (req, res) => {
     urls: url,
     users: users[req.session.user_id],
   };
-req.session.views = (req.session.views || 0) + 1
-console.log(req.session.views)
+  req.session.views = (req.session.views || 0) + 1;
+  console.log(req.session.views);
   // console.log(users, urlDatabase, req.session.user_id, track);
 
   res.render("urls_index", templateVars);
@@ -119,20 +119,20 @@ app.get("/urls_redirect/:error", (req, res) => {
     errorMessage: ERROR[req.params.error],
     errorTitle: req.params.error
   };
-  console.log(templateVars, req.params.error)
+  console.log(templateVars, req.params.error);
   res.render("urls_redirect", templateVars);
 });
 
 //send user to the create new page
 app.get("/urls/new", (req, res) => {
-  const id = req.session.user_id
+  const id = req.session.user_id;
   const templateVars = {
     users: users[id],
   };
 
   if (!templateVars.users) {
     //not logged in
-    res.status(401)
+    res.status(401);
     return res.redirect("/urls_redirect/_401");
   }
 
@@ -147,15 +147,15 @@ app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
 //TODO redirect to "urls_redirect" after a modal message
   const id = req.session.user_id;
-  const urlId = req.params.id
+  const urlId = req.params.id;
   let clickNum = urlDatabase[urlId].click;
   if (!users[id]) {
     res.status(401);
-    return res.redirect("/urls_redirect/_401")
+    return res.redirect("/urls_redirect/_401");
   }
   if (!urlDatabase[req.params.id]) {
     res.status(404);
-    return res.redirect("/urls_redirect/_404")
+    return res.redirect("/urls_redirect/_404");
   }
 
   //if a user is logged in, but the id doesn't match the set cookie then the user doesn't have permission to access the url
@@ -163,7 +163,7 @@ app.get("/urls/:id", (req, res) => {
   if (urlDatabase[req.params.id].userID !== id) {
     //403
     res.status(403);
-    return res.redirect("/urls_redirect/_403")
+    return res.redirect("/urls_redirect/_403");
   }
 
   const templateVars = {
@@ -181,27 +181,27 @@ app.get("/u/:id", (req, res) => {
   // const { id, password, email} = req.body
   const trackID = generateRandomString(16);
   const tiny = req.params.id;
-  let id ='';
+  let id = '';
 
   if (!urlDatabase[req.params.id]) {
     //404
-    res.redirect("/urls_redirect/_404")
+    res.redirect("/urls_redirect/_404");
   }
 
   if (!users[req.session.user_id] && !track[trackID]) {
-      id = trackID 
+    id = trackID;
 
       
   } else {
     id = req.session.user_id;
   }
     
-//I want to first create a unique trackID 
-//if the user is not logged in and there is no trackId value stored then create a new track object
-//if the user is logged in, set the current cookie to the trackId
-//we also need to set the trackID to a cookie that is tied to the not logged in user
-//we need to also compare this created cookie with the current user 
-//if the current cookie doesn't match the trackId then we can create a new track object for that ID and link that to a cookie as well.
+  //I want to first create a unique trackID
+  //if the user is not logged in and there is no trackId value stored then create a new track object
+  //if the user is logged in, set the current cookie to the trackId
+  //we also need to set the trackID to a cookie that is tied to the not logged in user
+  //we need to also compare this created cookie with the current user
+  //if the current cookie doesn't match the trackId then we can create a new track object for that ID and link that to a cookie as well.
 
   track[id] = {
     [tiny]: {
@@ -209,8 +209,8 @@ app.get("/u/:id", (req, res) => {
       timeStamp: new Date().toString(),
       uniqueVisitors: [],
     }
-  }
-  console.log(track)
+  };
+  console.log(track);
   urlDatabase[req.params.id].click++;
   const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
@@ -250,7 +250,7 @@ app.post("/urls", (req, res) => {
   const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
-    return res.redirect("/urls_redirect/_401")
+    return res.redirect("/urls_redirect/_401");
   }
   const tiny = generateRandomString(6);
   const longURL = req.body.longURL;
@@ -268,7 +268,7 @@ app.put("/urls/:id", (req, res) => {
   const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
-    return res.redirect("/urls_redirect/_401")
+    return res.redirect("/urls_redirect/_401");
     
   } else if (!urlDatabase[req.params.id]) {
     //if id doesn't exist, error, assume id of the short URL, for cURL requests
@@ -278,7 +278,7 @@ app.put("/urls/:id", (req, res) => {
   } else if (urlDatabase[req.params.id].userID !== id) {
   //if user that is logged in but isn't the owner of the tinyURL cannot edit
     res.status(403);
-    return res.redirect("/urls_redirect/_403")
+    return res.redirect("/urls_redirect/_403");
 
   } else {
     const longURL = req.body.longURL;
@@ -296,19 +296,19 @@ app.delete("/urls/:id/delete", (req, res) => {
   const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
-    return res.redirect("/urls_redirect/_401")
+    return res.redirect("/urls_redirect/_401");
 
   } else if (!urlDatabase[req.params.id]) {
     //if id doesn't exist, error assume id of the short URL, for cURL requests
     //404
     res.status(404);
-    return res.redirect("/urls_redirect/_404")
+    return res.redirect("/urls_redirect/_404");
 
   } else if (urlDatabase[req.params.id].userID !== id) {
     //if user doesn't own that url, error
     res.status(403);
     //403
-    return res.redirect("/urls_redirect/_403")
+    return res.redirect("/urls_redirect/_403");
 
   } else {
 
@@ -332,13 +332,13 @@ app.post("/login", (req, res) => {
   if (!uId) {
     //403 login
     res.status(403);
-    return res.redirect("/urls_redirect/_403LOGIN")
+    return res.redirect("/urls_redirect/_403LOGIN");
   } else {
     //must also check if the hashed passwords match
     if (!bcrypt.compareSync(password, uId.password)) {
       //403
       res.status(403);
-      return res.redirect("/urls_redirect/_403")
+      return res.redirect("/urls_redirect/_403");
     }
   }
 

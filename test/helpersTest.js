@@ -35,8 +35,8 @@ const testDatabase = {
   },
 };
 
-describe('getUserByEmail', function() {
-  it('should return a user with valid email', function() {
+describe('getUserByEmail', function () {
+  it('should return a user with valid email', function () {
     const user = getUserByEmail("user@example.com", testUsers);
     const expectedUserID = "userRandomID";
     // Write your assert statement here
@@ -67,28 +67,60 @@ describe('getUserByEmail', function() {
 
 describe('#generateRandomString', () => {
   it('Should return a string of 6 characters', () => {
-    const result = generateRandomString()
+    const result = generateRandomString(6);
     assert.equal(result.length, 6);
-  })
+  });
 
   it('should not have two strings equal after just 2 calls', () => {
-    const idOne = generateRandomString();
-    const idTwo = generateRandomString();
-    assert.notEqual(idOne, idTwo)
-  })
+    const idOne = generateRandomString(6);
+    const idTwo = generateRandomString(6);
+    assert.notEqual(idOne, idTwo);
+  });
 
   //there is a chance that this could fail, especially if you increased the amount of loops, there is probably a better way to generate a more 'randomness' into the function
+  //edit: I allowed a number to be passed which will dictate the length of the string generated, this should increase the chance of the string not being equal
   it('Should not have any strings equal after many calls', () => {
-    for (let i = 0; i < 10000; i++){
-      const idOne = generateRandomString()
-      const idTwo = generateRandomString()
+    for (let i = 0; i < 10000; i++) {
+      const idOne = generateRandomString(6);
+      const idTwo = generateRandomString(6);
       assert.notEqual(idOne, idTwo);
     }
-  })
-})
+  });
+
+  it('Should not have any strings equal after many calls for a string with a length of (32)', (done) => {
+    for (let i = 0; i < 50000; i++) {
+      const idOne = generateRandomString(32);
+      const idTwo = generateRandomString(32);
+      assert.notEqual(idOne, idTwo);
+
+    }
+    done();
+
+  });
+});
 
 describe('#urlsForUser', () => {
   it('should return a object', () => {
-    assert.equal
+    const type = urlsForUser("aJ48lW", testDatabase)
+    assert.equal(typeof type, "object");
+  });
+
+  it('should return a empty object when no user exists', () => {
+    assert.deepEqual(urlsForUser("bob", testDatabase), {})
   })
-})
+
+  it('should return an object in the proper format when a user is found', () => {
+    const actual = urlsForUser("aJ48lW", testDatabase)
+    const expected =  {
+        "9sm5xK": {
+          "longURL": "http://www.google.com"
+        },
+         "b2xVn2": {
+           "longURL": "http://www.lighthouselabs.ca"
+         }
+       }
+
+
+    assert.deepEqual(actual, expected)
+  })
+});
