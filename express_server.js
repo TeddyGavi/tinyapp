@@ -20,7 +20,7 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
 }));
 
-// welcome message in the terminal, not needed but fun to play with
+// welcome message in the terminal, not needed but good learning experience
 figlet.text('Welcome to\nTiny App', {
   font: "Avatar",
   horizontalLayout: 'fitted',
@@ -33,7 +33,6 @@ figlet.text('Welcome to\nTiny App', {
   }
   console.log(data);
 });
-
 
 const urlDatabase = {
 
@@ -131,20 +130,17 @@ app.get("/urls/new", (req, res) => {
     res.status(401);
     return res.redirect("/urls_redirect/_401");
   }
-
   res.render("urls_new", templateVars);
-  
 });
 
-
-
 //this will send the appropriate object to the show (edit) page in order to be displayed after form submission
+
 app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
-// redirect to "urls_redirect" after a modal message
+
   const id = req.session.user_id;
   const urlId = req.params.id;
-  const isUserAuth = authorizeUser(req, users, urlDatabase)
+  const isUserAuth = authorizeUser(req, users, urlDatabase);
   let clickNum = urlDatabase[urlId].click;
 
   if (isUserAuth !== (401 || 403 || 404)) {
@@ -158,7 +154,6 @@ app.get("/urls/:id", (req, res) => {
     res.render("urls_show", templateVars);
 
   } else {
-
     res.status(isUserAuth);
     return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
   }
@@ -166,15 +161,13 @@ app.get("/urls/:id", (req, res) => {
 
 //redirect any short url to the longurl
 app.get("/u/:id", (req, res) => {
-  // const { id, password, email} = req.body
-  const trackID = generateRandomString(16);
   const tiny = req.params.id;
-  // let id = '';
-
-  if (!urlDatabase[req.params.id]) {
-    //404
+  if (!urlDatabase[tiny]) {
     res.redirect("/urls_redirect/_404");
   }
+
+  // const trackID = generateRandomString(16);
+  // let id = '';
 
   // if (!users[req.session.user_id] && !track[trackID]) {
   //   id = trackID;
@@ -239,7 +232,6 @@ app.post("/urls", (req, res) => {
     return res.redirect("/urls_redirect/_401");
   }
   const tiny = generateRandomString(6);
-  const urls = urlsForUser(id, urlDatabase);
   const longURL = req.body.longURL;
   const userID = users[id].id;
   const click = 0;
@@ -256,15 +248,11 @@ app.put("/urls/:id", (req, res) => {
   const isUserAuth = authorizeUser(req, users, urlDatabase);
 
   if (isUserAuth !== (401 || 403 || 404)) {
-
     const longURL = req.body.longURL;
     const userID = users[id].id;
     urlDatabase[req.params.id] = { longURL, userID };
-  
     return res.redirect('/urls');
-
   } else {
-
     res.status(isUserAuth);
     return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
   }
@@ -274,14 +262,11 @@ app.put("/urls/:id", (req, res) => {
 //once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page
 //THIS HAS BEEN OVERRIDDEN TO A DELETE
 app.delete("/urls/:id/delete", (req, res) => {
- 
   const isUserAuth = authorizeUser(req, users, urlDatabase);
 
   if (isUserAuth !== (401 || 403 || 404)) {
-  
     delete urlDatabase[req.params.id];
     return res.redirect("/urls");
-
   } else {
     res.status(isUserAuth);
     return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
@@ -297,19 +282,19 @@ app.post("/login", (req, res) => {
     //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
     return res.status(400);
   }
+
   //if the email search returns a empty object, that means user was not found
   if (!uId) {
-    //403 login
     res.status(403);
     return res.redirect("/urls_redirect/_403LOGIN");
   } else {
     //must also check if the hashed passwords match
     if (!bcrypt.compareSync(password, uId.password)) {
-      //403
       res.status(403);
       return res.redirect("/urls_redirect/_403");
     }
   }
+
   //set cookie to that users id
   req.session.user_id = uId.id;
   res.redirect("/urls");
@@ -325,16 +310,13 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const id = generateRandomString(6);
-  
   //if email or password are empty strings send back a 400 status code
-  
   if (email === "" || password === "") {
-     //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
+    //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
     return res.status(400);
   }
   
   if (getUserByEmail(email, users)) {
-    //400 exists
     res.status(400);
     return res.redirect("/urls_redirect/_400EXISTS");
   }
