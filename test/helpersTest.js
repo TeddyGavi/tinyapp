@@ -35,8 +35,8 @@ const testDatabase = {
   },
 };
 
-describe('getUserByEmail', function () {
-  it('should return a user with valid email', function () {
+describe('getUserByEmail', function() {
+  it('should return a user with valid email', function() {
     const user = getUserByEmail("user@example.com", testUsers);
     const expectedUserID = "userRandomID";
     // Write your assert statement here
@@ -101,26 +101,26 @@ describe('#generateRandomString', () => {
 
 describe('#urlsForUser', () => {
   it('should return a object', () => {
-    const type = urlsForUser("aJ48lW", testDatabase)
+    const type = urlsForUser("aJ48lW", testDatabase);
     assert.equal(typeof type, "object");
   });
 
   it('should return a empty object when no user exists', () => {
-    assert.deepEqual(urlsForUser("bob", testDatabase), {})
-  })
+    assert.deepEqual(urlsForUser("bob", testDatabase), {});
+  });
 
   it('should return an object in the proper format when a user is found', () => {
-    const actual = urlsForUser("aJ48lW", testDatabase)
+    const actual = urlsForUser("aJ48lW", testDatabase);
     const expected =  {
-        "9sm5xK": {
-          "longURL": "http://www.google.com"
-        },
-         "b2xVn2": {
-           "longURL": "http://www.lighthouselabs.ca"
-         }
-       }
+      "9sm5xK": {
+        "longURL": "http://www.google.com"
+      },
+      "b2xVn2": {
+        "longURL": "http://www.lighthouselabs.ca"
+      }
+    };
 
 
-    assert.deepEqual(actual, expected)
-  })
+    assert.deepEqual(actual, expected);
+  });
 });

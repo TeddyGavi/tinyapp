@@ -4,7 +4,7 @@ const app = express();
 const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
 const cookieSession = require("cookie-session");
-const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
+const { getUserByEmail, generateRandomString, urlsForUser, authorizeUser } = require("./helpers");
 const { PORT, SESSION_KEYS, ERROR } = require("./CONSTANTS");
 const figlet = require("figlet");
 
@@ -20,6 +20,7 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
 }));
 
+// welcome message in the terminal, not needed but fun to play with
 figlet.text('Welcome to\nTiny App', {
   font: "Avatar",
   horizontalLayout: 'fitted',
@@ -61,6 +62,7 @@ const users = {
   }
 };
 
+//TODO stretch user tracking
 const track = {
  
   // "tinyURL": {
@@ -71,21 +73,15 @@ const track = {
 };
 
 
-
-/*************************** TESTs *********************************/
-//root directory redirects to urls index will change later
+/*************************** TESTs and DEV use **********************/
+//root directory redirects to register
 app.get("/", (req, res) => {
   res.redirect("/register");
 });
-//viewing the json
+//viewing the json handing for debugging
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-//testing html output
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 /*************************** TESTs END ******************************/
 
 /*************************** GET start ******************************/
@@ -145,56 +141,48 @@ app.get("/urls/new", (req, res) => {
 //this will send the appropriate object to the show (edit) page in order to be displayed after form submission
 app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
-//TODO redirect to "urls_redirect" after a modal message
+// redirect to "urls_redirect" after a modal message
   const id = req.session.user_id;
   const urlId = req.params.id;
+  const isUserAuth = authorizeUser(req, users, urlDatabase)
   let clickNum = urlDatabase[urlId].click;
-  if (!users[id]) {
-    res.status(401);
-    return res.redirect("/urls_redirect/_401");
-  }
-  if (!urlDatabase[req.params.id]) {
-    res.status(404);
-    return res.redirect("/urls_redirect/_404");
-  }
 
-  //if a user is logged in, but the id doesn't match the set cookie then the user doesn't have permission to access the url
-  //TODO same as above TODO ^^
-  if (urlDatabase[req.params.id].userID !== id) {
-    //403
-    res.status(403);
-    return res.redirect("/urls_redirect/_403");
-  }
+  if (isUserAuth !== (401 || 403 || 404)) {
+ 
+    const templateVars = {
+      id: urlId,
+      longURL: urlDatabase[urlId].longURL,
+      users: users[id],
+      click: clickNum,
+    };
+    res.render("urls_show", templateVars);
 
-  const templateVars = {
-    id: urlId,
-    longURL: urlDatabase[urlId].longURL,
-    users: users[id],
-    click: clickNum,
-  };
-  res.render("urls_show", templateVars);
+  } else {
+
+    res.status(isUserAuth);
+    return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
+  }
 });
-
 
 //redirect any short url to the longurl
 app.get("/u/:id", (req, res) => {
   // const { id, password, email} = req.body
   const trackID = generateRandomString(16);
   const tiny = req.params.id;
-  let id = '';
+  // let id = '';
 
   if (!urlDatabase[req.params.id]) {
     //404
     res.redirect("/urls_redirect/_404");
   }
 
-  if (!users[req.session.user_id] && !track[trackID]) {
-    id = trackID;
+  // if (!users[req.session.user_id] && !track[trackID]) {
+  //   id = trackID;
 
       
-  } else {
-    id = req.session.user_id;
-  }
+  // } else {
+  //   id = req.session.user_id;
+  // }
     
   //I want to first create a unique trackID
   //if the user is not logged in and there is no trackId value stored then create a new track object
@@ -203,19 +191,19 @@ app.get("/u/:id", (req, res) => {
   //we need to also compare this created cookie with the current user
   //if the current cookie doesn't match the trackId then we can create a new track object for that ID and link that to a cookie as well.
 
-  track[id] = {
-    [tiny]: {
-      trackId: id,
-      timeStamp: new Date().toString(),
-      uniqueVisitors: [],
-    }
-  };
-  console.log(track);
+  // track[id] = {
+  //   [tiny]: {
+  //     trackId: id,
+  //     timeStamp: new Date().toString(),
+  //     uniqueVisitors: [],
+  //   }
+  // };
+  // console.log(track);
+
   urlDatabase[req.params.id].click++;
   const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
-
 
 //register page
 app.get("/register", (req, res) => {
@@ -226,7 +214,6 @@ app.get("/register", (req, res) => {
     return res.redirect("/urls");
   }
   res.render("urls_register", templateVars);
-  
 });
 
 app.get("/login",(req, res) => {
@@ -234,10 +221,9 @@ app.get("/login",(req, res) => {
     users: users[req.session.user_id],
   };
   if (templateVars.users) {
-    return  res.redirect("/urls");
+    return res.redirect("/urls");
   }
   res.render("urls_login", templateVars);
-  
 });
 
 /*************************** GET end **************************/
@@ -253,6 +239,7 @@ app.post("/urls", (req, res) => {
     return res.redirect("/urls_redirect/_401");
   }
   const tiny = generateRandomString(6);
+  const urls = urlsForUser(id, urlDatabase);
   const longURL = req.body.longURL;
   const userID = users[id].id;
   const click = 0;
@@ -266,55 +253,38 @@ app.post("/urls", (req, res) => {
 app.put("/urls/:id", (req, res) => {
   //if user is not logged in, error
   const id = req.session.user_id;
-  if (!users[id]) {
-    res.status(401);
-    return res.redirect("/urls_redirect/_401");
-    
-  } else if (!urlDatabase[req.params.id]) {
-    //if id doesn't exist, error, assume id of the short URL, for cURL requests
-    res.status(404);
-    return res.redirect("/urls_redirect/_404");
+  const isUserAuth = authorizeUser(req, users, urlDatabase);
 
-  } else if (urlDatabase[req.params.id].userID !== id) {
-  //if user that is logged in but isn't the owner of the tinyURL cannot edit
-    res.status(403);
-    return res.redirect("/urls_redirect/_403");
+  if (isUserAuth !== (401 || 403 || 404)) {
 
-  } else {
     const longURL = req.body.longURL;
     const userID = users[id].id;
     urlDatabase[req.params.id] = { longURL, userID };
+  
     return res.redirect('/urls');
+
+  } else {
+
+    res.status(isUserAuth);
+    return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
   }
+
 });
 
 //once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page
 //THIS HAS BEEN OVERRIDDEN TO A DELETE
-//TODO add a confirmation window before delete, possibly undo??
 app.delete("/urls/:id/delete", (req, res) => {
-  //if user is not logged in, error
-  const id = req.session.user_id;
-  if (!users[id]) {
-    res.status(401);
-    return res.redirect("/urls_redirect/_401");
+ 
+  const isUserAuth = authorizeUser(req, users, urlDatabase);
 
-  } else if (!urlDatabase[req.params.id]) {
-    //if id doesn't exist, error assume id of the short URL, for cURL requests
-    //404
-    res.status(404);
-    return res.redirect("/urls_redirect/_404");
-
-  } else if (urlDatabase[req.params.id].userID !== id) {
-    //if user doesn't own that url, error
-    res.status(403);
-    //403
-    return res.redirect("/urls_redirect/_403");
-
-  } else {
-
+  if (isUserAuth !== (401 || 403 || 404)) {
+  
     delete urlDatabase[req.params.id];
     return res.redirect("/urls");
-  
+
+  } else {
+    res.status(isUserAuth);
+    return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
   }
 });
 
@@ -324,10 +294,9 @@ app.post("/login", (req, res) => {
   const uId = getUserByEmail(email, users);
   
   if (email === "" || password === "") {
-    //400 empty
+    //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
     return res.status(400);
   }
-  
   //if the email search returns a empty object, that means user was not found
   if (!uId) {
     //403 login
@@ -341,15 +310,12 @@ app.post("/login", (req, res) => {
       return res.redirect("/urls_redirect/_403");
     }
   }
-
   //set cookie to that users id
   req.session.user_id = uId.id;
   res.redirect("/urls");
-
 });
 
-
-//set up the logout route so the user can hit the logout button and get redirected back to login page
+//set up the logout route so the user can hit the logout button and get redirected back to login page and clear cookie
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/login");
@@ -363,7 +329,7 @@ app.post("/register", (req, res) => {
   //if email or password are empty strings send back a 400 status code
   
   if (email === "" || password === "") {
-    //400 empty
+     //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
     return res.status(400);
   }
   
@@ -389,3 +355,4 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
 
+/***************************  END *********************************/
