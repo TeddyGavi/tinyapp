@@ -21,7 +21,7 @@
 ### Future Goals
 - **stretch**: show _unique_ clicks on a tinyURL
 - **stretch**: show _log_ including timestamp, visits, etc
-- add a userDB and urlDB file logging through the ```fs module``
+- add a userDB and urlDB file logging through the ```fs module```
 - add error handling for url entries
 - accessibility considerations need to be addressed
 - Create footers
