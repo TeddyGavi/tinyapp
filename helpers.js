@@ -1,14 +1,14 @@
 const crypto = require("crypto");
 
 
-//function that employs crypto to help generate random 6 character string
-const generateRandomString = () => {
+//function that employs crypto to help generate random (length) character string
+const generateRandomString = (length) => {
   // generate a random hex number with the crypto module see Node docs
   const id = crypto.randomBytes(3).toString('hex');
   let result = "";
-  for (let i = 0; i < 6; i ++) {
+  for (let i = 0; i < length; i ++) {
   //Loop through that number and replace certain characters (at a random index each time)
-    const randomNum = Math.floor((Math.random() * 5) + 1);
+    const randomNum = Math.floor((Math.random() * (length - 1)) + 1);
     if (id.charAt(randomNum).search(/[a-z]/g) === 0) {
       result += id[randomNum].toUpperCase();
     } else if (id.charAt(randomNum).search(/[a-z]/g) === -1) {
@@ -41,6 +41,8 @@ const urlsForUser = (id, urlDatabase) => {
 
   return urls;
 };
+
+
 
 module.exports = {
   generateRandomString,

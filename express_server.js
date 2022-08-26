@@ -5,8 +5,8 @@ const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
 const cookieSession = require("cookie-session");
 const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
+const { PORT, SESSION_KEYS, ERROR } = require("./CONSTANTS")
 const figlet = require("figlet");
-const PORT = 8080;
 
 app.use(methodOverride('_method'));
 
@@ -16,7 +16,8 @@ app.use(express.urlencoded({extended: true}));
 app.use(morgan("dev"));
 app.use(cookieSession({
   name: 'session',
-  keys: ['I believe this will use key at 0, then allow for rotation']
+  keys: SESSION_KEYS,
+  maxAge: 24 * 60 * 60 * 1000,
 }));
 
 figlet.text('Welcome to\nTiny App', {
@@ -61,18 +62,12 @@ const users = {
 };
 
 const track = {
-  "b2xVn2": {
-    id: "b2xVn2",
-    clickNum: 20,
-    cookieID: "aJ48lW",
-    timeStamp: new Date(),
-  },
-  "9sm5xK": {
-    id: "9sm5xK",
-    clickNum: 44,
-    cookieID: "aJ48lW",
-    timeStamp: new Date(),
-  },
+ 
+  // "tinyURL": {
+  //   id: usersID if in user DB otherwise visitor ID,
+  //   timeStamp: new Date(),
+  //   uniqueVisitors: [],
+  // }
 }
 
 
@@ -100,38 +95,45 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   const id = req.session.user_id;
   if (!users[id]) {
-    return res.redirect("/urls_redirect");
+    return res.redirect("/urls_redirect/_401");
   }
   const url = urlsForUser(id, urlDatabase);
   const templateVars = {
     urls: url,
     users: users[req.session.user_id],
   };
-
-  console.log(users, urlDatabase, req.session.user_id);
+req.session.views = (req.session.views || 0) + 1
+console.log(req.session.views)
+  // console.log(users, urlDatabase, req.session.user_id, track);
 
   res.render("urls_index", templateVars);
 });
 
 //sends user to a page that will explicitly tell the users they must login or register
-app.get("/urls_redirect", (req, res) => {
+app.get("/urls_redirect/:error", (req, res) => {
   const id = req.session.user_id;
   const url = urlsForUser(id, urlDatabase);
   const templateVars = {
     urls: url,
     users: users[req.session.user_id],
+    errorMessage: ERROR[req.params.error],
+    errorTitle: req.params.error
   };
+  console.log(templateVars, req.params.error)
   res.render("urls_redirect", templateVars);
 });
 
 //send user to the create new page
 app.get("/urls/new", (req, res) => {
+  const id = req.session.user_id
   const templateVars = {
-    users: users[req.session.user_id],
+    users: users[id],
   };
 
   if (!templateVars.users) {
-    return res.redirect("/urls_redirect");
+    //not logged in
+    res.status(401)
+    return res.redirect("/urls_redirect/_401");
   }
 
   res.render("urls_new", templateVars);
@@ -140,7 +142,7 @@ app.get("/urls/new", (req, res) => {
 
 
 
-//this will send the appropriate object to the show page in order to be displayed after form submission
+//this will send the appropriate object to the show (edit) page in order to be displayed after form submission
 app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
 //TODO redirect to "urls_redirect" after a modal message
@@ -149,18 +151,19 @@ app.get("/urls/:id", (req, res) => {
   let clickNum = urlDatabase[urlId].click;
   if (!users[id]) {
     res.status(401);
-    return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
+    return res.redirect("/urls_redirect/_401")
   }
   if (!urlDatabase[req.params.id]) {
     res.status(404);
-    return res.send('<html><body>This shortURL does not exist. <a href="/urls">Please Return home.</a></body></html>');
+    return res.redirect("/urls_redirect/_404")
   }
 
   //if a user is logged in, but the id doesn't match the set cookie then the user doesn't have permission to access the url
   //TODO same as above TODO ^^
   if (urlDatabase[req.params.id].userID !== id) {
-    res.status(401);
-    return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
+    //403
+    res.status(403);
+    return res.redirect("/urls_redirect/_403")
   }
 
   const templateVars = {
@@ -175,13 +178,44 @@ app.get("/urls/:id", (req, res) => {
 
 //redirect any short url to the longurl
 app.get("/u/:id", (req, res) => {
+  // const { id, password, email} = req.body
+  const trackID = generateRandomString(16);
+  const tiny = req.params.id;
+  let id ='';
+
   if (!urlDatabase[req.params.id]) {
-    return res.send('<html><body>This shortened URL does not exist.</body></html>');
+    //404
+    res.redirect("/urls_redirect/_404")
   }
+
+  if (!users[req.session.user_id] && !track[trackID]) {
+      id = trackID 
+
+      
+  } else {
+    id = req.session.user_id;
+  }
+    
+//I want to first create a unique trackID 
+//if the user is not logged in and there is no trackId value stored then create a new track object
+//if the user is logged in, set the current cookie to the trackId
+//we also need to set the trackID to a cookie that is tied to the not logged in user
+//we need to also compare this created cookie with the current user 
+//if the current cookie doesn't match the trackId then we can create a new track object for that ID and link that to a cookie as well.
+
+  track[id] = {
+    [tiny]: {
+      trackId: id,
+      timeStamp: new Date().toString(),
+      uniqueVisitors: [],
+    }
+  }
+  console.log(track)
   urlDatabase[req.params.id].click++;
   const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
+
 
 //register page
 app.get("/register", (req, res) => {
@@ -216,31 +250,36 @@ app.post("/urls", (req, res) => {
   const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
-    return res.send('<html><body>You are not registered and do not have permission to modify urls.</body></html>');
+    return res.redirect("/urls_redirect/_401")
   }
-  const tiny = generateRandomString();
+  const tiny = generateRandomString(6);
   const longURL = req.body.longURL;
   const userID = users[id].id;
-  urlDatabase[tiny] = { longURL, userID };
+  const click = 0;
+  urlDatabase[tiny] = { longURL, userID, click };
+
   res.redirect('/urls/' + tiny);
   
 });
 
-//add a post method that will allow updating of the long url
+//add a post method, made RESTful that will allow updating of the long url
 app.put("/urls/:id", (req, res) => {
   //if user is not logged in, error
   const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
-    return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
+    return res.redirect("/urls_redirect/_401")
+    
   } else if (!urlDatabase[req.params.id]) {
     //if id doesn't exist, error, assume id of the short URL, for cURL requests
     res.status(404);
-    return res.send('<html><body>That tinyURL does not exist<a href="/urls">Please return home</a></body></html>');
+    return res.redirect("/urls_redirect/_404");
+
   } else if (urlDatabase[req.params.id].userID !== id) {
   //if user that is logged in but isn't the owner of the tinyURL cannot edit
-    res.status(401);
-    return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
+    res.status(403);
+    return res.redirect("/urls_redirect/_403")
+
   } else {
     const longURL = req.body.longURL;
     const userID = users[id].id;
@@ -257,15 +296,20 @@ app.delete("/urls/:id/delete", (req, res) => {
   const id = req.session.user_id;
   if (!users[id]) {
     res.status(401);
-    return res.send('<html><body>You are not logged in, you do not have permission to continue. <a href="/login">Please Login</a></body></html>');
+    return res.redirect("/urls_redirect/_401")
+
   } else if (!urlDatabase[req.params.id]) {
     //if id doesn't exist, error assume id of the short URL, for cURL requests
+    //404
     res.status(404);
-    return res.send('<html><body>That tinyURL does not exist<a href="/urls">Please return home</a></body></html>');
+    return res.redirect("/urls_redirect/_404")
+
   } else if (urlDatabase[req.params.id].userID !== id) {
     //if user doesn't own that url, error
-    res.status(401);
-    return res.send('<html><body>You are not the owner of this tinyURL, you do not have permission to continue.</body></html>');
+    res.status(403);
+    //403
+    return res.redirect("/urls_redirect/_403")
+
   } else {
 
     delete urlDatabase[req.params.id];
@@ -280,18 +324,21 @@ app.post("/login", (req, res) => {
   const uId = getUserByEmail(email, users);
   
   if (email === "" || password === "") {
+    //400 empty
     return res.status(400);
   }
   
   //if the email search returns a empty object, that means user was not found
   if (!uId) {
-    res.statusCode = 403;
-    res.send(`${res.statusCode} The email you entered is not in our database Please go back and try again, or register a A New User.`);
+    //403 login
+    res.status(403);
+    return res.redirect("/urls_redirect/_403LOGIN")
   } else {
     //must also check if the hashed passwords match
     if (!bcrypt.compareSync(password, uId.password)) {
-      res.statusCode = 403;
-      return res.send(`${res.statusCode} The password you entered is incorrect`);
+      //403
+      res.status(403);
+      return res.redirect("/urls_redirect/_403")
     }
   }
 
@@ -311,17 +358,19 @@ app.post("/logout", (req, res) => {
 //register end point
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
-  const id = generateRandomString();
+  const id = generateRandomString(6);
   
   //if email or password are empty strings send back a 400 status code
   
   if (email === "" || password === "") {
+    //400 empty
     return res.status(400);
   }
   
   if (getUserByEmail(email, users)) {
-    res.statusCode = 400;
-    return res.send(`Error. Status code: ${res.statusCode} Account already exists`);
+    //400 exists
+    res.status(400);
+    return res.redirect("/urls_redirect/_400EXISTS");
   }
 
   const hashedPassword = bcrypt.hashSync(password, 10);
