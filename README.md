@@ -13,9 +13,6 @@
 2. start the TinyApp server in your terminal ```node express_server.js```
 3. browse to ```localhost:8080/``` to get started
 
-### Content:
-- 
-
 ### Features:
 - **stretch**: show total clicks on a tinyURL in edit page
 ### Future Goals
@@ -38,7 +35,19 @@
 
 
 #### Dependencies
+- bcryptjs
+- chalk
+- cookie-parser
+- cookie-session
+- ejs
+- express 
+- figlet
+- method-override
 #### DevDependencies
+- chai
+- mocha
+- morgan
+- nodemon
 
 
 
