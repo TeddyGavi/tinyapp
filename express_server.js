@@ -2,7 +2,7 @@ const express = require("express");
 const methodOverride = require("method-override");
 const app = express();
 const bcrypt = require('bcryptjs');
-const morgan = require('morgan');
+// const morgan = require('morgan');
 const cookieSession = require("cookie-session");
 const { getUserByEmail, generateRandomString, urlsForUser, authorizeUser } = require("./helpers");
 const { PORT, SESSION_KEYS, ERROR } = require("./CONSTANTS");
@@ -13,7 +13,7 @@ app.use(methodOverride('_method'));
 app.set("view engine", "ejs");
 
 app.use(express.urlencoded({extended: true}));
-app.use(morgan("dev"));
+// app.use(morgan("dev")); //used for dev purposes might be useful to reviewer to confirm the route the requests are being made to?
 app.use(cookieSession({
   name: 'session',
   keys: SESSION_KEYS,
@@ -41,7 +41,8 @@ figlet.text('Welcome to\nTiny App', {
 //unique visits can be achieved by filtering the array into an array of visitIDs and creating a new Set() object which will only be made of unique items
 //we can then call the .size property to get the amount of unique visits
 //this has the downside of creating a very large log file to be created, but the set is fast from what I have read?
-//so far I have implemented this in the urls_show ejs, hoping to continue to get the full stretch feature
+//so far I have implemented this in the urls_show ejs
+//TODO need to implement date display of each unique visit, as well as created date of URL
 
 const urlDatabase = {
 
@@ -127,7 +128,6 @@ app.get("/urls_redirect/:error", (req, res) => {
     errorMessage: ERROR[req.params.error],
     errorTitle: req.params.error
   };
-  console.log(templateVars, req.params.error);
   res.render("urls_redirect", templateVars);
 });
 
@@ -149,31 +149,21 @@ app.get("/urls/new", (req, res) => {
 //this will send the appropriate object to the show (edit) page in order to be displayed after form submission
 
 app.get("/urls/:id", (req, res) => {
-//if a user is not logged in, display relevant message
-
   const id = req.session.user_id;
-  const shortURL = req.params.id;
+  const tiny = req.params.id;
   const isUserAuth = authorizeUser(req, users, urlDatabase);
-  let clickNum = clickDB[shortURL].click;
 
-  if (isUserAuth !== (401 || 403 || 404)) {
+  if (typeof isUserAuth === "boolean") {
  
     const templateVars = {
-      id: shortURL,
-      longURL: urlDatabase[shortURL].longURL,
+      id: tiny,
+      longURL: urlDatabase[tiny].longURL,
       users: users[id],
-      dateCreated: urlDatabase[shortURL].date,
-      click: clickNum,
-      urlDB: urlDatabase[shortURL].clickHistory
+      dateCreated: urlDatabase[tiny].date,
+      click: clickDB[tiny].click,
+      urlDB: urlDatabase[tiny].clickHistory
     };
 
-    const test = urlDatabase[shortURL].clickHistory
-    const testF = test.filter((e, i, a) => a.indexOf(e) === i)
-    console.log(testF)
-    const visits = new Set(urlDatabase[shortURL].clickHistory.map(x => x.visitID ));
-    const l = visits.values().size
-    // console.log(test, visits.size, l)
-    // console.log(templateVars)
     return res.render("urls_show", templateVars);
 
   } else {
@@ -187,15 +177,13 @@ app.get("/u/:id", (req, res) => {
   const tiny = req.params.id;
   let trackId = req.session.user_id;
   if (!urlDatabase[tiny]) {
-    res.redirect("/urls_redirect/_404");
+    return res.redirect("/urls_redirect/_404");
   }
 
   if (!trackId) {
     trackId = generateRandomString(16)
   }
   urlDatabase[tiny].clickHistory.push({ visitID: trackId, createdAt: new Date() })
-
-  console.log(urlDatabase)
 
   clickDB[tiny].click++;
   const longURL = urlDatabase[tiny].longURL;
@@ -239,32 +227,37 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const userID = users[id].id;
   const click = 0;
-  const dateNow = new Date().toString()
-  const clickHistory = []
-  //append databases
+  const dateNow = new Date().toString();
+  const clickHistory = [];
+
+  //append DBs
   urlDatabase[tiny] = { longURL, userID, dateNow, clickHistory };
   clickDB[tiny] = { userID, click }
 
   res.redirect('/urls/' + tiny);
-  
 });
 
 //add a post method, made RESTful that will allow updating of the long url
 app.put("/urls/:id", (req, res) => {
-  //if user is not logged in, error
   const id = req.session.user_id;
   const isUserAuth = authorizeUser(req, users, urlDatabase);
 
-  if (isUserAuth !== (401 || 403 || 404)) {
+  if (typeof isUserAuth === "boolean") {
     const longURL = req.body.longURL;
+    const tiny = req.params.id
     const userID = users[id].id;
-    urlDatabase[req.params.id] = { longURL, userID };
+    const click = 0;
+    const dateNow = new Date().toString()
+    const clickHistory = [];
+
+    //append DBs
+    urlDatabase[tiny] = { longURL, userID, dateNow, clickHistory };
+    clickDB[tiny] = { userID, click }
     return res.redirect('/urls');
   } else {
     res.status(isUserAuth);
     return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
   }
-
 });
 
 //once user submits the form by confirming delete on the urls index page, that item is immediately deleted and redirected to home page
@@ -272,7 +265,7 @@ app.put("/urls/:id", (req, res) => {
 app.delete("/urls/:id/delete", (req, res) => {
   const isUserAuth = authorizeUser(req, users, urlDatabase);
 
-  if (isUserAuth !== (401 || 403 || 404)) {
+  if (typeof isUserAuth === "boolean") {
     delete urlDatabase[req.params.id];
     return res.redirect("/urls");
   } else {
