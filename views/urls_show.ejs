@@ -24,9 +24,8 @@
         <!-- this is where we can create a new set from the clickVisits and access the length to get unique visits,
         still display the clicks as normal
       also need to display the date in a readable format maybe with a function  -->
-      <% const tempArray = urlDB.map(x => x.visitID) %>
-      <% const temp = new Set(tempArray) %>
-      <% const uniqueVisit = temp.size %>
+      <% const tempArray = new Set(urlDB.map(x => x.visitID)) %>
+      <% const uniqueVisit = tempArray.size %>
       <p class="card-text"> Unique Visits: <%= uniqueVisit %> </p>
       </div>
       

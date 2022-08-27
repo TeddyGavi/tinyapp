@@ -34,12 +34,21 @@ figlet.text('Welcome to\nTiny App', {
   console.log(data);
 });
 
+//example DBs for testing
+//user tracking is accomplished by creating an array of objects, this array contains the id of the visitor (which is set as the cookie, if the user is not registered in the database then a new random id is created, as well as logging the time the visit was created)
+//total visits can then be achieved by getting the length of the array, 
+//right now I have the clicks being stored in a separate clickDB object, which simply increments whenever a visit to a site is recorded, a new object must also be created for every new URL made.
+//unique visits can be achieved by filtering the array into an array of visitIDs and creating a new Set() object which will only be made of unique items
+//we can then call the .size property to get the amount of unique visits
+//this has the downside of creating a very large log file to be created, but the set is fast from what I have read?
+//so far I have implemented this in the urls_show ejs, hoping to continue to get the full stretch feature
+
 const urlDatabase = {
 
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
     userID: "aJ48lW",
-    date: "07/22/2022",
+    date: "22/07/2022",
     clickHistory: [ {visitID: "98uY56", createdAt: new Date()}]
   },
   "9sm5xK": {
@@ -74,17 +83,6 @@ const clickDB = {
   },
 }
 
-//TODO stretch user tracking
-const track = {
- 
-  //   new Date(): {
-  //   tinyURL: "tinyURL"
-  //   id: usersID if in user DB otherwise visitor ID,
-  //   timeStamp: new Date(),
-  //   
-  // }
-};
-
 
 /*************************** TESTs and DEV use **********************/
 //root directory redirects to register
@@ -103,6 +101,7 @@ app.get("/urls.json", (req, res) => {
 //main page,
 app.get("/urls", (req, res) => {
   const id = req.session.user_id;
+  const click = clickDB
   if (!users[id]) {
     return res.redirect("/urls_redirect/_401");
   }
@@ -110,6 +109,8 @@ app.get("/urls", (req, res) => {
   const templateVars = {
     urls: url,
     users: users[id],
+    urlDB: urlDatabase,
+    click: clickDB,
   };
 
 
@@ -161,6 +162,7 @@ app.get("/urls/:id", (req, res) => {
       id: shortURL,
       longURL: urlDatabase[shortURL].longURL,
       users: users[id],
+      dateCreated: urlDatabase[shortURL].date,
       click: clickNum,
       urlDB: urlDatabase[shortURL].clickHistory
     };
@@ -188,33 +190,6 @@ app.get("/u/:id", (req, res) => {
     res.redirect("/urls_redirect/_404");
   }
 
-  // const trackID = generateRandomString(16);
-  // let id = '';
-
-  // if (!users[req.session.user_id] && !track[trackID]) {
-  //   id = trackID;
-
-      
-  // } else {
-  //   id = req.session.user_id;
-  // }
-    
-  //I want to first create a unique trackID
-  //if the user is not logged in and there is no trackId value stored then create a new track object
-  //if the user is logged in, set the current cookie to the trackId
-  //we also need to set the trackID to a cookie that is tied to the not logged in user
-  //we need to also compare this created cookie with the current user
-  //if the current cookie doesn't match the trackId then we can create a new track object for that ID and link that to a cookie as well.
-
-  // track[id] = {
-  //   [tiny]: {
-  //     trackId: id,
-  //     timeStamp: new Date().toString(),
-  //     uniqueVisitors: [],
-  //   }
-  // };
-  // console.log(track);
-
   if (!trackId) {
     trackId = generateRandomString(16)
   }
@@ -222,7 +197,7 @@ app.get("/u/:id", (req, res) => {
 
   console.log(urlDatabase)
 
-  clickDB[req.params.id].click++;
+  clickDB[tiny].click++;
   const longURL = urlDatabase[tiny].longURL;
   res.redirect(longURL);
 });
@@ -263,10 +238,12 @@ app.post("/urls", (req, res) => {
   const tiny = generateRandomString(6);
   const longURL = req.body.longURL;
   const userID = users[id].id;
-  // const click = 0;
+  const click = 0;
   const dateNow = new Date().toString()
   const clickHistory = []
+  //append databases
   urlDatabase[tiny] = { longURL, userID, dateNow, clickHistory };
+  clickDB[tiny] = { userID, click }
 
   res.redirect('/urls/' + tiny);
   
@@ -351,7 +328,7 @@ app.post("/register", (req, res) => {
 
   users[id] = {
     id: id,
-    email: req.body.email,
+    email: email,
     password: hashedPassword,
   };
 
