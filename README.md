@@ -31,7 +31,7 @@
 - on loading the app you will need to register or login:
 ![Login](Screenshot1login.png)
 - You can edit each longURL and view the click count:
-![edit](Screenshot3edit.png)
+![edit](Screen3edit.png)
 - please be certain you want to delete!
 ![delete](delete.png)
 
