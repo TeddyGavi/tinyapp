@@ -74,6 +74,10 @@ const authorizeUser = (req, users, urlDatabase) => {
 };
 
 
+//need a function that checks in every route whether the current user is in the database and does that user already have a cookie set if yes then we proceed as usual, if not then we need to assign a uniqueID and cookie for that user and save that in a newDB
+
+//in the /u/:id route we need to check if the user, registered or not is in the users db or the tracking db, if yes to either then we can increase the clicks but not unique visits, if no then we increase the unique clicks
+
 
 module.exports = {
   generateRandomString,

@@ -39,12 +39,14 @@ const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
     userID: "aJ48lW",
-    click: 0,
+    date: "07/22/2022",
+    clickHistory: [ {visitID: "98uY56", createdAt: new Date()}]
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
     userID: "aJ48lW",
-    click: 15,
+    date: "08/08/2022",
+    clickHistory: [],
   },
 };
 
@@ -61,13 +63,25 @@ const users = {
   }
 };
 
+const clickDB = {
+  "b2xVn2": {
+    userID: "aJ48lW",
+    click: 0,
+  },
+  "9sm5xK": {
+    userID: "aJ48lW",
+    click: 15,
+  },
+}
+
 //TODO stretch user tracking
 const track = {
  
-  // "tinyURL": {
+  //   new Date(): {
+  //   tinyURL: "tinyURL"
   //   id: usersID if in user DB otherwise visitor ID,
   //   timeStamp: new Date(),
-  //   uniqueVisitors: [],
+  //   
   // }
 };
 
@@ -77,7 +91,7 @@ const track = {
 app.get("/", (req, res) => {
   res.redirect("/register");
 });
-//viewing the json handing for debugging
+//viewing the json, handing for debugging
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -95,11 +109,9 @@ app.get("/urls", (req, res) => {
   const url = urlsForUser(id, urlDatabase);
   const templateVars = {
     urls: url,
-    users: users[req.session.user_id],
+    users: users[id],
   };
-  req.session.views = (req.session.views || 0) + 1;
-  console.log(req.session.views);
-  // console.log(users, urlDatabase, req.session.user_id, track);
+
 
   res.render("urls_index", templateVars);
 });
@@ -110,7 +122,7 @@ app.get("/urls_redirect/:error", (req, res) => {
   const url = urlsForUser(id, urlDatabase);
   const templateVars = {
     urls: url,
-    users: users[req.session.user_id],
+    users: users[id],
     errorMessage: ERROR[req.params.error],
     errorTitle: req.params.error
   };
@@ -139,29 +151,39 @@ app.get("/urls/:id", (req, res) => {
 //if a user is not logged in, display relevant message
 
   const id = req.session.user_id;
-  const urlId = req.params.id;
+  const shortURL = req.params.id;
   const isUserAuth = authorizeUser(req, users, urlDatabase);
-  let clickNum = urlDatabase[urlId].click;
+  let clickNum = clickDB[shortURL].click;
 
   if (isUserAuth !== (401 || 403 || 404)) {
  
     const templateVars = {
-      id: urlId,
-      longURL: urlDatabase[urlId].longURL,
+      id: shortURL,
+      longURL: urlDatabase[shortURL].longURL,
       users: users[id],
       click: clickNum,
+      urlDB: urlDatabase[shortURL].clickHistory
     };
-    res.render("urls_show", templateVars);
+
+    const test = urlDatabase[shortURL].clickHistory
+    const testF = test.filter((e, i, a) => a.indexOf(e) === i)
+    console.log(testF)
+    const visits = new Set(urlDatabase[shortURL].clickHistory.map(x => x.visitID ));
+    const l = visits.values().size
+    // console.log(test, visits.size, l)
+    // console.log(templateVars)
+    return res.render("urls_show", templateVars);
 
   } else {
     res.status(isUserAuth);
-    return res.redirect(`/urls_redirect/_ ${isUserAuth}`);
+    return res.redirect(`/urls_redirect/_${isUserAuth}`);
   }
 });
 
 //redirect any short url to the longurl
 app.get("/u/:id", (req, res) => {
   const tiny = req.params.id;
+  let trackId = req.session.user_id;
   if (!urlDatabase[tiny]) {
     res.redirect("/urls_redirect/_404");
   }
@@ -193,8 +215,15 @@ app.get("/u/:id", (req, res) => {
   // };
   // console.log(track);
 
-  urlDatabase[req.params.id].click++;
-  const longURL = urlDatabase[req.params.id].longURL;
+  if (!trackId) {
+    trackId = generateRandomString(16)
+  }
+  urlDatabase[tiny].clickHistory.push({ visitID: trackId, createdAt: new Date() })
+
+  console.log(urlDatabase)
+
+  clickDB[req.params.id].click++;
+  const longURL = urlDatabase[tiny].longURL;
   res.redirect(longURL);
 });
 
@@ -234,8 +263,10 @@ app.post("/urls", (req, res) => {
   const tiny = generateRandomString(6);
   const longURL = req.body.longURL;
   const userID = users[id].id;
-  const click = 0;
-  urlDatabase[tiny] = { longURL, userID, click };
+  // const click = 0;
+  const dateNow = new Date().toString()
+  const clickHistory = []
+  urlDatabase[tiny] = { longURL, userID, dateNow, clickHistory };
 
   res.redirect('/urls/' + tiny);
   
@@ -259,7 +290,7 @@ app.put("/urls/:id", (req, res) => {
 
 });
 
-//once user submits the form by hitting delete on the urls index page, that item is immediately deleted and redirected to home page
+//once user submits the form by confirming delete on the urls index page, that item is immediately deleted and redirected to home page
 //THIS HAS BEEN OVERRIDDEN TO A DELETE
 app.delete("/urls/:id/delete", (req, res) => {
   const isUserAuth = authorizeUser(req, users, urlDatabase);
@@ -276,7 +307,7 @@ app.delete("/urls/:id/delete", (req, res) => {
 //when a user logs in we authenticate the user before logging that user
 app.post("/login", (req, res) => {
   const { password, email } = req.body;
-  const uId = getUserByEmail(email, users);
+  const userObj = getUserByEmail(email, users);
   
   if (email === "" || password === "") {
     //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
@@ -284,27 +315,22 @@ app.post("/login", (req, res) => {
   }
 
   //if the email search returns a empty object, that means user was not found
-  if (!uId) {
+  if (!userObj) {
     res.status(403);
     return res.redirect("/urls_redirect/_403LOGIN");
   } else {
     //must also check if the hashed passwords match
-    if (!bcrypt.compareSync(password, uId.password)) {
+    if (!bcrypt.compareSync(password, userObj.password)) {
       res.status(403);
-      return res.redirect("/urls_redirect/_403");
+      return res.redirect("/urls_redirect/_403LOGIN");
     }
   }
 
   //set cookie to that users id
-  req.session.user_id = uId.id;
+  req.session.user_id = userObj.id;
   res.redirect("/urls");
 });
 
-//set up the logout route so the user can hit the logout button and get redirected back to login page and clear cookie
-app.post("/logout", (req, res) => {
-  req.session = null;
-  res.redirect("/login");
-});
 
 //register end point
 app.post("/register", (req, res) => {
@@ -331,6 +357,12 @@ app.post("/register", (req, res) => {
 
   req.session.user_id = users[id].id;
   res.redirect("/urls");
+});
+
+//set up the logout route so the user can hit the logout button and get redirected back to login page and clear cookie
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/login");
 });
 
 app.listen(PORT, () => {
