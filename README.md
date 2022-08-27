@@ -31,13 +31,13 @@
 
 ### Views:
 - On loading the app you will need to register or login:
-![Login](/docs/Screenshot1login.png)
+![Login](https://github.com/TeddyGavi/tinyapp/blob/main/docs/Screenshot1login.png)
 - You are now able to view your tinyUrls! 
-![urls](/docs/Screenshot2urls.png)
+![urls](https://github.com/TeddyGavi/tinyapp/blob/main/docs/Screenshot2urls.png)
 - You can edit each longURL and view the click/unique visits count:
-![edit](/docs/Screen3edit.png)
+![edit](https://github.com/TeddyGavi/tinyapp/blob/main/docs/Screen3edit.png)
 - please be certain you want to delete!
-![delete](/docs/delete.png)
+![delete](https://github.com/TeddyGavi/tinyapp/blob/main/docs/delete.png)
 
 
 
