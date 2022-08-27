@@ -2,7 +2,6 @@ const express = require("express");
 const methodOverride = require("method-override");
 const app = express();
 const bcrypt = require('bcryptjs');
-// const morgan = require('morgan');
 const cookieSession = require("cookie-session");
 const { getUserByEmail, generateRandomString, urlsForUser, authorizeUser } = require("./helpers");
 const { PORT, SESSION_KEYS, ERROR } = require("./CONSTANTS");
@@ -13,7 +12,6 @@ app.use(methodOverride('_method'));
 app.set("view engine", "ejs");
 
 app.use(express.urlencoded({extended: true}));
-// app.use(morgan("dev")); //used for dev purposes might be useful to reviewer to confirm the route the requests are being made to?
 app.use(cookieSession({
   name: 'session',
   keys: SESSION_KEYS,
@@ -37,7 +35,7 @@ figlet.text('Welcome to\nTiny App', {
 //example DBs for testing
 //I spoke to Sarah Zsu and Ernie Johnson for help with these, and the array idea was brought up in lecture on Thursday Aug 25/2022 by Bryan Gomes
 //user tracking is accomplished by creating an array of objects, this array contains the id of the visitor (which is set as the cookie, if the user is not registered in the database then a new random id is created, as well as logging the time the visit was created)
-//total visits can then be achieved by getting the length of the array, 
+//total visits can then be achieved by getting the length of the array,
 //right now I have the clicks being stored in a separate clickDB object, which simply increments whenever a visit to a site is recorded, a new object must also be created for every new URL made.
 //unique visits can be achieved by filtering the array into an array of visitIDs and creating a new Set() object which will only be made of unique items
 //we can then call the .size property to get the amount of unique visits
@@ -87,7 +85,7 @@ const clickDB = {
     userID: "aJ48lW",
     click: 15,
   },
-}
+};
 
 
 /*************************** TESTs and DEV use **********************/
@@ -103,12 +101,10 @@ app.get("/urls.json", (req, res) => {
 
 /*************************** GET start ******************************/
 
-
 //main page,
 app.get("/urls", (req, res) => {
   const id = req.session.user_id;
   //the clickDB is only needed to display the stretch objectives see urls_index for more info
-  const click = clickDB
   if (!users[id]) {
     return res.redirect("/urls_redirect/_401");
   }
@@ -123,7 +119,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-//sends user to a page that will explicitly display an error popup as well as direction to register or login
+//sends user to a ERROR page that will explicitly display an error popup as well as direction to register or login
 app.get("/urls_redirect/:error", (req, res) => {
   const id = req.session.user_id;
   const url = urlsForUser(id, urlDatabase);
@@ -185,9 +181,9 @@ app.get("/u/:id", (req, res) => {
   }
 
   if (!trackId) {
-    trackId = generateRandomString(16)
+    trackId = generateRandomString(16);
   }
-  urlDatabase[tiny].clickHistory.push({ visitID: trackId, createdAt: new Date() })
+  urlDatabase[tiny].clickHistory.push({ visitID: trackId, createdAt: new Date() });
 
   clickDB[tiny].click++;
   const longURL = urlDatabase[tiny].longURL;
@@ -236,7 +232,7 @@ app.post("/urls", (req, res) => {
 
   //append DBs
   urlDatabase[tiny] = { longURL, userID, dateNow, clickHistory };
-  clickDB[tiny] = { userID, click }
+  clickDB[tiny] = { userID, click };
 
   res.redirect('/urls/' + tiny);
 });
@@ -248,15 +244,15 @@ app.put("/urls/:id", (req, res) => {
 
   if (typeof isUserAuth === "boolean") {
     const longURL = req.body.longURL;
-    const tiny = req.params.id
+    const tiny = req.params.id;
     const userID = users[id].id;
     const click = 0;
-    const dateNow = new Date().toString()
+    const dateNow = new Date().toString();
     const clickHistory = [];
 
     //append DBs
     urlDatabase[tiny] = { longURL, userID, dateNow, clickHistory };
-    clickDB[tiny] = { userID, click }
+    clickDB[tiny] = { userID, click };
     return res.redirect('/urls');
   } else {
     res.status(isUserAuth);

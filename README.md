@@ -15,7 +15,7 @@
 4. browse to ```localhost:8080/``` in any browser to get started.
 
 #### NOTE:
-- it may be useful to install morgan for code review purposes, if so you will need to uncomment the 'require' and 'use'
+- it may be useful to install morgan for code review purposes, if yes, you will need to head to [morgan](https://www.npmjs.com/package/morgan) to download.
 
 ### Features:
 - [x] **stretch**: show total clicks on a tinyURL in edit page
@@ -30,12 +30,14 @@
 - [ ] Create footers
 
 ### Views:
-- on loading the app you will need to register or login:
-![Login](Screenshot1login.png)
-- You can edit each longURL and view the click count:
-![edit](Screen3edit.png)
+- On loading the app you will need to register or login:
+![Login](/docs/Screenshot1login.png)
+- You are now able to view your tinyUrls! 
+![urls](/docs/Screenshot2urls.png)
+- You can edit each longURL and view the click/unique visits count:
+![edit](/docs/Screen3edit.png)
 - please be certain you want to delete!
-![delete](delete.png)
+![delete](/docs/delete.png)
 
 
 
