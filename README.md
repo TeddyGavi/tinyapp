@@ -10,7 +10,7 @@
 
 ### Quick Start:
 1. clone and download the GitHub repo and setup dependencies with ```npm install```
-2. Navigate the to correct directory in your terminal. ```cd...```
+2. Navigate to /confirm the repo directory in your terminal. ```cd...```
 3. start the TinyApp server in your terminal ```node express_server.js```
 4. browse to ```localhost:8080/``` in any browser to get started.
 
@@ -21,11 +21,11 @@
 - [x] **stretch**: show total clicks on a tinyURL in edit page
 - [x] **stretch**: show _unique_ clicks on a tinyURL
 ### Future Goals
-- **stretch**: show _log_ including timestamp, visits, etc 
-- add a userDB and urlDB file logging through the ```fs module```
-- add error handling and validating for url entries and duplicate entries
-- accessibility considerations need to be addressed
-- Create footers
+- [] **stretch**: show _log_ including timestamp, visits, etc 
+- [] add a userDB and urlDB file logging through the ```fs module```
+- [] add error handling and validating for url entries and duplicate entries
+- [] accessibility considerations need to be addressed
+- [] Create footers
 
 ### Views:
 - on loading the app you will need to register or login:
