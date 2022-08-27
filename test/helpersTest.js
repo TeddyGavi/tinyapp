@@ -124,3 +124,6 @@ describe('#urlsForUser', () => {
     assert.deepEqual(actual, expected);
   });
 });
+
+
+//TODO need to write unit tests for authorize user function

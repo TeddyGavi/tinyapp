@@ -3,7 +3,7 @@
 - This web app will allow users to shorten long URLs much like TinyURL.com and bit.ly do.
 
 ### Goals
-- Build a simple multipage web app:
+- Build a simple multi-page web app:
   - [x] authentication protection
   - [x] reacts to a users logged in state
   - [x] allows for CRUD operations
@@ -24,7 +24,9 @@
 - [ ] **stretch**: show _log_ including timestamp, visits, etc 
 - [ ] add a userDB and urlDB file logging through the ```fs module```
 - [ ] add error handling and validating for url entries and duplicate entries
+- [ ] write unit tests for ```authorizeUser()```
 - [ ] accessibility considerations need to be addressed
+- [ ] login portion of header (when displayed) /logout doesn't collapse with the navbar properly when adjusting for different display sizes
 - [ ] Create footers
 
 ### Views:

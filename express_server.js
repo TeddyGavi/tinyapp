@@ -35,6 +35,7 @@ figlet.text('Welcome to\nTiny App', {
 });
 
 //example DBs for testing
+//I spoke to Sarah Zsu and Ernie Johnson for help with these, and the array idea was brought up in lecture on Thursday Aug 25/2022 by Bryan Gomes
 //user tracking is accomplished by creating an array of objects, this array contains the id of the visitor (which is set as the cookie, if the user is not registered in the database then a new random id is created, as well as logging the time the visit was created)
 //total visits can then be achieved by getting the length of the array, 
 //right now I have the clicks being stored in a separate clickDB object, which simply increments whenever a visit to a site is recorded, a new object must also be created for every new URL made.
@@ -59,6 +60,10 @@ const urlDatabase = {
     clickHistory: [],
   },
 };
+
+//In actual practice I wouldn't store the passwords like this, as discussed in lecture we would need to create a .env file to store the passwords, in the database we are uploading only hashed passwords
+//however in this example app it is nice to be able to copy and paste the passwords into the browser for easy testing
+//It would be a good idea to keep the session keys in a separate .env file as well, here that is temporarily represented by using the CONSTANTS.js file
 
 const users = {
   aJ48lW: {
@@ -102,6 +107,7 @@ app.get("/urls.json", (req, res) => {
 //main page,
 app.get("/urls", (req, res) => {
   const id = req.session.user_id;
+  //the clickDB is only needed to display the stretch objectives see urls_index for more info
   const click = clickDB
   if (!users[id]) {
     return res.redirect("/urls_redirect/_401");
@@ -114,11 +120,10 @@ app.get("/urls", (req, res) => {
     click: clickDB,
   };
 
-
   res.render("urls_index", templateVars);
 });
 
-//sends user to a page that will explicitly tell the users they must login or register
+//sends user to a page that will explicitly display an error popup as well as direction to register or login
 app.get("/urls_redirect/:error", (req, res) => {
   const id = req.session.user_id;
   const url = urlsForUser(id, urlDatabase);
@@ -147,7 +152,6 @@ app.get("/urls/new", (req, res) => {
 });
 
 //this will send the appropriate object to the show (edit) page in order to be displayed after form submission
-
 app.get("/urls/:id", (req, res) => {
   const id = req.session.user_id;
   const tiny = req.params.id;
@@ -306,17 +310,16 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const id = generateRandomString(6);
+  
   //if email or password are empty strings send back a 400 status code
   if (email === "" || password === "") {
     //400 empty due to required attribute on the ejs form, you cannot continue unless you fill this form
     return res.status(400);
   }
-  
   if (getUserByEmail(email, users)) {
     res.status(400);
     return res.redirect("/urls_redirect/_400EXISTS");
   }
-
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   users[id] = {
